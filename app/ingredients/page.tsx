@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import IngredientsSelector from "@/app/components/IngredientsSelector";
 
 export default async function IngredientsPage() {
   const { data: ingredients } = await supabase
@@ -10,13 +11,9 @@ export default async function IngredientsPage() {
     <main>
       <h1>Ingrédients</h1>
 
-      <ul>
-        {ingredients?.map((ingredient) => (
-          <li key={ingredient.ingredient_id}>
-            {ingredient.nom}
-          </li>
-        ))}
-      </ul>
+      <IngredientsSelector
+        ingredients={ingredients || []}
+      />
     </main>
   );
 }
