@@ -80,6 +80,17 @@ console.log(
         <div className="bg-white border rounded-lg p-4">
           Bientôt ici les recettes compatibles
         </div>
+
+<div>
+  {recettes.length} recettes chargées
+</div>
+
+<div>
+  {recetteIngredients.length} liaisons chargées
+</div>
+
+
+        
       </div>
     </div>
   )
