@@ -6,17 +6,18 @@ type Ingredient = {
   ingredient_id: number
   nom: string
 }
+
 type Recette = {
   recette_id: number
   nom: string
 }
-
 
 type RecetteIngredient = {
   recette_id: number
   ingredient_id: number
   obligatoire: boolean
 }
+
 export default function IngredientsSelector({
   ingredients,
   recettes,
@@ -35,79 +36,37 @@ export default function IngredientsSelector({
         : [...current, nom]
     )
   }
-const recettesCompatibles = recettes
-  .map((recette) => {
-    const ingredientsRecette = recetteIngredients.filter(
-      (ri) => ri.recette_id === recette.recette_id
-    )
 
-    const ingredientsTrouves = ingredientsRecette.filter((ri) => {
-      const ingredient = ingredients.find(
-        (i) => i.ingredient_id === ri.ingredient_id
-      )
-
-      return ingredient && selected.includes(ingredient.nom)
-    })
-
-    const score =
-      ingredientsRecette.length > 0
-        ? Math.round(
-            (ingredientsTrouves.length /
-              ingredientsRecette.length) *
-              100
-          )
-        : 0
-
-
-const ingredientsCompatibles = ingredients
-  .map((ingredient) => {
-    if (selected.includes(ingredient.nom)) {
-      return {
-        nom: ingredient.nom,
-        score: 0,
-      };
-    }
-
-    let score = 0;
-
-    recettes.forEach((recette) => {
+  const recettesCompatibles = recettes
+    .map((recette) => {
       const ingredientsRecette = recetteIngredients.filter(
         (ri) => ri.recette_id === recette.recette_id
-      );
+      )
 
-      const nomsIngredients = ingredientsRecette
-        .map((ri) =>
-          ingredients.find(
-            (i) => i.ingredient_id === ri.ingredient_id
-          )?.nom
+      const ingredientsTrouves = ingredientsRecette.filter((ri) => {
+        const ingredient = ingredients.find(
+          (i) => i.ingredient_id === ri.ingredient_id
         )
-        .filter(Boolean);
 
-      const contientSelection = selected.every((nom) =>
-        nomsIngredients.includes(nom)
-      );
+        return ingredient && selected.includes(ingredient.nom)
+      })
 
-      if (
-        contientSelection &&
-        nomsIngredients.includes(ingredient.nom)
-      ) {
-        score++;
+      const score =
+        ingredientsRecette.length > 0
+          ? Math.round(
+              (ingredientsTrouves.length /
+                ingredientsRecette.length) *
+                100
+            )
+          : 0
+
+      return {
+        nom: recette.nom,
+        score,
       }
-    });
-
-    return {
-      nom: ingredient.nom,
-      score,
-    };
-  })
-  .filter((i) => i.score > 0)
-  .sort((a, b) => b.score - a.score)
-  .slice(0, 10);
-`
-
-
-
-
+    })
+    .filter((r) => r.score > 50)
+    .sort((a, b) => b.score - a.score)
 
   return (
     <div>
@@ -147,28 +106,17 @@ const ingredientsCompatibles = ingredients
           Recettes compatibles
         </h2>
 
-<div className="bg-white border rounded-lg p-4">
-  {recettesCompatibles.map((recette) => (
-    <div
-      key={recette.nom}
-      className="flex justify-between border-b py-2"
-    >
-      <span>{recette.nom}</span>
-      <span>{recette.score}%</span>
-    </div>
-  ))}
-</div>
-
-<div>
-  {recettes.length} recettes chargées
-</div>
-
-<div>
-  {recetteIngredients.length} liaisons chargées
-</div>
-
-
-        
+        <div className="bg-white border rounded-lg p-4">
+          {recettesCompatibles.map((recette) => (
+            <div
+              key={recette.nom}
+              className="flex justify-between border-b py-2"
+            >
+              <span>{recette.nom}</span>
+              <span>{recette.score}%</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
