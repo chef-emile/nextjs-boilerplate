@@ -110,7 +110,13 @@ const ingredientsCompatibles = ingredients.map((ingredient) => {
   }
 })
 
-
+const getCompatibilityScore = (ingredientId: number) => {
+  return (
+    ingredientsCompatibles.find(
+      (i) => i.id === ingredientId
+    )?.score || 0
+  )
+}
   
   return (
     <div>
