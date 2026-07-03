@@ -58,6 +58,57 @@ const recettesCompatibles = recettes
           )
         : 0
 
+
+const ingredientsCompatibles = ingredients
+  .map((ingredient) => {
+    if (selected.includes(ingredient.nom)) {
+      return {
+        nom: ingredient.nom,
+        score: 0,
+      };
+    }
+
+    let score = 0;
+
+    recettes.forEach((recette) => {
+      const ingredientsRecette = recetteIngredients.filter(
+        (ri) => ri.recette_id === recette.recette_id
+      );
+
+      const nomsIngredients = ingredientsRecette
+        .map((ri) =>
+          ingredients.find(
+            (i) => i.ingredient_id === ri.ingredient_id
+          )?.nom
+        )
+        .filter(Boolean);
+
+      const contientSelection = selected.every((nom) =>
+        nomsIngredients.includes(nom)
+      );
+
+      if (
+        contientSelection &&
+        nomsIngredients.includes(ingredient.nom)
+      ) {
+        score++;
+      }
+    });
+
+    return {
+      nom: ingredient.nom,
+      score,
+    };
+  })
+  .filter((i) => i.score > 0)
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 10);
+`
+
+
+
+
+    
     return {
       nom: recette.nom,
       score,
