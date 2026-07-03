@@ -35,7 +35,10 @@ export default function IngredientsSelector({
         : [...current, nom]
     )
   }
-
+console.log(
+  recettes.length,
+  recetteIngredients.length
+)
   return (
     <div>
       {ingredients.map((ingredient) => (
