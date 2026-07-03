@@ -108,14 +108,6 @@ const ingredientsCompatibles = ingredients
 
 
 
-    
-    return {
-      nom: recette.nom,
-      score,
-    }
-  })
-  .filter((r) => r.score > 50)
-  .sort((a, b) => b.score - a.score)
 
   return (
     <div>
