@@ -68,6 +68,50 @@ export default function IngredientsSelector({
     .filter((r) => r.score > 50)
     .sort((a, b) => b.score - a.score)
 
+
+
+const ingredientsCompatibles = ingredients.map((ingredient) => {
+  if (selected.includes(ingredient.nom)) {
+    return {
+      id: ingredient.ingredient_id,
+      score: 0,
+    }
+  }
+
+  let score = 0
+
+  recettes.forEach((recette) => {
+    const ingredientsRecette = recetteIngredients
+      .filter((ri) => ri.recette_id === recette.recette_id)
+      .map((ri) => ri.ingredient_id)
+
+    const recetteContientSelection = selected.every((nom) => {
+      const ingredientSelectionne = ingredients.find(
+        (i) => i.nom === nom
+      )
+
+      return ingredientSelectionne &&
+        ingredientsRecette.includes(
+          ingredientSelectionne.ingredient_id
+        )
+    })
+
+    if (
+      recetteContientSelection &&
+      ingredientsRecette.includes(ingredient.ingredient_id)
+    ) {
+      score++
+    }
+  })
+
+  return {
+    id: ingredient.ingredient_id,
+    score,
+  }
+})
+
+
+  
   return (
     <div>
       {ingredients.map((ingredient) => (
