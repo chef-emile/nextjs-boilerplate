@@ -11,6 +11,7 @@ type Recette = {
   nom: string
 }
 
+
 type RecetteIngredient = {
   recette_id: number
   ingredient_id: number
