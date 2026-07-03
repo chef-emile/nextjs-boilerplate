@@ -35,9 +35,36 @@ export default function IngredientsSelector({
         : [...current, nom]
     )
   }
-console.log(
-  recettes.length,
-  recetteIngredients.length
+const recettesCompatibles = recettes
+  .map((recette) => {
+    const ingredientsRecette = recetteIngredients.filter(
+      (ri) => ri.recette_id === recette.recette_id
+    )
+
+    const ingredientsTrouves = ingredientsRecette.filter((ri) => {
+      const ingredient = ingredients.find(
+        (i) => i.ingredient_id === ri.ingredient_id
+      )
+
+      return ingredient && selected.includes(ingredient.nom)
+    })
+
+    const score =
+      ingredientsRecette.length > 0
+        ? Math.round(
+            (ingredientsTrouves.length /
+              ingredientsRecette.length) *
+              100
+          )
+        : 0
+
+    return {
+      nom: recette.nom,
+      score,
+    }
+  })
+  .filter((r) => r.score > 0)
+  .sort((a, b) => b.score - a.score)
 )
   return (
     <div>
@@ -77,9 +104,17 @@ console.log(
           Recettes compatibles
         </h2>
 
-        <div className="bg-white border rounded-lg p-4">
-          Bientôt ici les recettes compatibles
-        </div>
+<div className="bg-white border rounded-lg p-4">
+  {recettesCompatibles.map((recette) => (
+    <div
+      key={recette.nom}
+      className="flex justify-between border-b py-2"
+    >
+      <span>{recette.nom}</span>
+      <span>{recette.score}%</span>
+    </div>
+  ))}
+</div>
 
 <div>
   {recettes.length} recettes chargées
