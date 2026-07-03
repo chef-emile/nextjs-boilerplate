@@ -63,7 +63,7 @@ const recettesCompatibles = recettes
       score,
     }
   })
-  .filter((r) => r.score > 0)
+  .filter((r) => r.score > 50)
   .sort((a, b) => b.score - a.score)
 
   return (
