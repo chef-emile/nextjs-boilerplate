@@ -7,7 +7,7 @@ export default async function Home() {
 
   return (
     <main>
-      <h1>Mes recettes</h1>
+      <h1>Mes recettes et ingrédients </h1>
 
       <pre>{JSON.stringify({ data, error }, null, 2)}</pre>
     </main>
