@@ -40,8 +40,7 @@ export default function IngredientsSelector({
 
       <pre>{JSON.stringify(selected, null, 2)}</pre>
     </div>
-  )
-}
+
 
 <div className="mt-6 p-4 bg-gray-100 rounded-lg">
   <h2 className="font-bold mb-2">Ingrédients sélectionnés :</h2>
@@ -57,3 +56,5 @@ export default function IngredientsSelector({
     ))}
   </div>
 </div>
+  )
+}
