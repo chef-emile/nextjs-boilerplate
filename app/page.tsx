@@ -2,7 +2,7 @@ import { supabase } from "../lib/supabase";
 
 export default async function Home() {
   const { data, error } = await supabase
-    .from("ingredients")
+    .from("recettes")
     .select("*");
 
   return (
