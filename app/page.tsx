@@ -1,15 +1,21 @@
 import { supabase } from "../lib/supabase";
 
 export default async function Home() {
-  const { data, error } = await supabase 
+  const { data: recettes } = await supabase
     .from("recettes")
     .select("*");
 
   return (
     <main>
-      <h1>Mes recettes et ingrédients </h1>
+      <h1>Mes recettes</h1>
 
-      <pre>{JSON.stringify({ data, error }, null, 2)}</pre>
+      <ul>
+        {recettes?.map((recette) => (
+          <li key={recette.recette_id}>
+            {recette.nom}
+          </li>
+        ))}
+      </ul>
     </main>
   );
 }
