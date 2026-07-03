@@ -2,16 +2,17 @@
 
 import { useState } from 'react'
 
-export default function IngredientsSelector({ ingredients }) {
-  const [selected, setSelected] = useState<string[]>([])
+type Ingredient = {
+  ingredient_id: number
+  nom: string
+}
 
-  const toggleIngredient = (nom: string) => {
-    setSelected((current) =>
-      current.includes(nom)
-        ? current.filter((i) => i !== nom)
-        : [...current, nom]
-    )
-  }
+export default function IngredientsSelector({
+  ingredients,
+}: {
+  ingredients: Ingredient[]
+}) {
+  const [selected, setSelected] = useState<string[]>([])
 
   return (
     <div>
