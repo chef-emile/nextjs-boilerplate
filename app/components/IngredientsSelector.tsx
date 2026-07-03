@@ -124,10 +124,13 @@ const getCompatibilityScore = (ingredientId: number) => {
         <button
           key={ingredient.ingredient_id}
           onClick={() => toggleIngredient(ingredient.nom)}
-          className={`m-1 px-4 py-2 rounded-full border transition-all duration-200 ${
-            selected.includes(ingredient.nom)
-              ? 'bg-green-500 text-white border-green-500'
-              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+className={`m-1 px-4 py-2 rounded-full border transition-all duration-200 ${
+  selected.includes(ingredient.nom)
+    ? 'bg-green-500 text-white border-green-500'
+    : getCompatibilityScore(ingredient.ingredient_id) > 0
+    ? 'bg-yellow-200 border-yellow-500'
+    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+}`}
           }`}
         >
           {ingredient.nom}
