@@ -1,8 +1,15 @@
-export default function Home() {
+import { supabase } from "../lib/supabase";
+
+export default async function Home() {
+  const { data, error } = await supabase
+    .from("recettes")
+    .select("*");
+
   return (
     <main>
-      <h1>Mon moteur de recettes</h1>
-      <p>Sélectionnez vos ingrédients pour découvrir des recettes.</p>
+      <h1>Mes recettes</h1>
+
+      <pre>{JSON.stringify({ data, error }, null, 2)}</pre>
     </main>
   );
 }
