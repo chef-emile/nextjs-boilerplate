@@ -6,11 +6,24 @@ type Ingredient = {
   ingredient_id: number
   nom: string
 }
+type Recette = {
+  recette_id: number
+  nom: string
+}
 
+type RecetteIngredient = {
+  recette_id: number
+  ingredient_id: number
+  obligatoire: boolean
+}
 export default function IngredientsSelector({
   ingredients,
+  recettes,
+  recetteIngredients,
 }: {
   ingredients: Ingredient[]
+  recettes: Recette[]
+  recetteIngredients: RecetteIngredient[]
 }) {
   const [selected, setSelected] = useState<string[]>([])
 
