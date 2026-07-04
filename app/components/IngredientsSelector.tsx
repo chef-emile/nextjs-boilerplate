@@ -65,7 +65,8 @@ export default function IngredientsSelector({
         score,
       }
     })
-    .filter((r) => r.score > 50)
+    .filter((r) => r.score > 0)
+    .slice(0, 10)
     .sort((a, b) => b.score - a.score)
 
 
