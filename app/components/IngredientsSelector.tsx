@@ -69,7 +69,16 @@ export default function IngredientsSelector({
     .slice(0, 10)
     .sort((a, b) => b.score - a.score)
 
+const score = getCompatibilityScore(
+  ingredient.ingredient_id
+)
 
+: score > 10
+? 'bg-yellow-500'
+: score > 5
+? 'bg-yellow-300'
+: score > 0
+? 'bg-yellow-100'
 
 const ingredientsCompatibles = ingredients.map((ingredient) => {
   if (selected.includes(ingredient.nom)) {
@@ -134,6 +143,7 @@ const getCompatibilityScore = (ingredientId: number) => {
             }`}
         >
           {ingredient.nom}
+          {score > 0 && ` (${score})`}
         </button>
       ))}
 
