@@ -28,6 +28,7 @@ export default function IngredientsSelector({
   recetteIngredients: RecetteIngredient[]
 }) {
   const [selected, setSelected] = useState<string[]>([])
+  const [selectedRecipe, setSelectedRecipe] =  useState<string | null>(null)
 
   const toggleIngredient = (nom: string) => {
     setSelected((current) =>
@@ -176,15 +177,26 @@ export default function IngredientsSelector({
 
         <div className="bg-white border rounded-lg p-4">
           {recettesCompatibles.map((recette) => (
-            <div
-              key={recette.nom}
-              className="flex justify-between border-b py-2"
-            >
+           <button
+            key={recette.nom}
+            onClick={() => setSelectedRecipe(recette.nom)}
+            className="w-full flex justify-between border-b py-2 hover:bg-gray-100"
+          >
               <span>{recette.nom}</span>
               <span>{recette.score}%</span>
-            </div>
+            </button>
           ))}
         </div>
+
+        {selectedRecipe && (
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+          <h2 className="font-bold">
+            Recette sélectionnée
+          </h2>
+
+          <p>{selectedRecipe}</p>
+      </div>
+    )}
       </div>
     </div>
   )
