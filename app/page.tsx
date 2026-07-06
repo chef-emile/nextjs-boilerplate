@@ -20,7 +20,7 @@ export default async function Home() {
           <li key={recette.recette_id}>
             {recette.nom}
           </li>
-        ))}
+        ))
       </ul>
     </main>
   );
