@@ -110,24 +110,3 @@ export default function AjouterIngredient() {
   )
 }
 
-
-
-
-
-
-
-
-
-xxx
-      
-      <button
-        onClick={ajouterIngredient}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
-      >
-        Ajouter
-      </button>
-
-      <p className="mt-4">{message}</p>
-    </main>
-  )
-}
