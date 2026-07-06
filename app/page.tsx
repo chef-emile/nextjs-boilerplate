@@ -10,26 +10,30 @@ export default async function Home() {
     <main>
       <h1>Mes recettes</h1>
 
-      <div className="flex gap-4 my-4">
-        /ingredients
-          Explorer les ingrédients
-        </Link>
+ 
 
-        /ajouter-ingredient
-          Ajouter un ingrédient
-        </Link>
+<div className="flex gap-4 my-4">
+  <Link
+    href="/ingredients"
+    className="bg-blue-500 text-white px-4 py-2 rounded"
+ ="bg-green-500 text-white px-4 py-2 rounded"
+  >
+    Ajouter un ingrédient
+  </Link>
 
-        /ajouter-recette
-          Ajouter une recette
-        </Link>
-      </div>
+  -recette"
+    className="bg-orange-500 text-white px-4 py-2 rounded"
+  >
+    Ajouter une recette
+  </Link>
+</div>
 
       <ul>
         {recettes?.map((recette) => (
           <li key={recette.recette_id}>
             {recette.nom}
           </li>
-        ))}
+        )) }
       </ul>
     </main>
   );
