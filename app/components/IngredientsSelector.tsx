@@ -69,7 +69,7 @@ export default function IngredientsSelector({
     .slice(0, 10)
     .sort((a, b) => b.score - a.score)
 
-
+{ingredients.map((ingredient) => {
 const score = getCompatibilityScore(
   ingredient.ingredient_id
 )
