@@ -25,7 +25,7 @@ export default async function Home() {
           )
         })}
       </ul>
-    
+      <Link
     </main>
   );
 }
