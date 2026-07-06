@@ -18,14 +18,23 @@ export default async function Home() {
           href="/ingredients"
           className="bg-blue-500 text-white px-4 py-2 rounded"
         >
-          Ajouter un ingrédient
+          Explorer les ingrédients
         </Link>
 
-      
-          className="bg-orange-500 text-white px-4 py-2 rounded"
-        >
-          Ajouter une recette
+         <Link
+          href="/ajouter-ingredient"
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+          Ajouter un ingrédient      
         </Link>
+
+        <Link
+          href="/ajouter-recette"
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+          Ajouter une recette      
+         </Link>
+          
       </div>
 
       <ul>
@@ -40,27 +49,3 @@ export default async function Home() {
 }
 
 
-    xxxc
-    
-    <main className="p-6">
-      <h1 className="text-2xl font-bold mb-4">
-        Mes recettes
-      </h1>
-
-      <Link
-        href="/ingredients"
-       >
-       <ul>
-        {recettes?.map(function (recette) {
-          return (
-            <li key={recette.recette_id}>
-            {recette.nom}
-            </li>
-          )
-        })}
-      </ul>
-      </Link>
-      
-    </main>
-  );
-}
