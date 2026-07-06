@@ -51,14 +51,9 @@ export default function IngredientsSelector({
         return ingredient && selected.includes(ingredient.nom)
       })
 
-      const score =
-        ingredientsRecette.length > 0
-          ? Math.round(
-              (ingredientsTrouves.length /
-                ingredientsRecette.length) *
-                100
-            )
-          : 0
+  const score =
+    ingredientsRecette.length > 0
+       ? Math.round( (ingredientsTrouves.length / ingredientsRecette.length) * 100 ) : 0
 
       return {
         nom: recette.nom,
