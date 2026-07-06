@@ -23,9 +23,9 @@ export default async function Home() {
             {recette.nom}
             </li>
           )
-      })}
-</ul>
+        })}
       </ul>
+    
     </main>
   );
 }
