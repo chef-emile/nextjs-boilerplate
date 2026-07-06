@@ -49,7 +49,7 @@ export default function AjouterIngredient() {
       })
 
     if (error) {
-      setMessage('Erreur')
+      setMessage(error.message)
     } else {
       setMessage('Ingrédient ajouté')
       setNom('')
