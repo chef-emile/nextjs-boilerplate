@@ -7,6 +7,41 @@ export default async function Home() {
     .select("*");
 
   return (
+
+    <main className="p-6">
+      <h1 className="text-2xl font-bold mb-4">
+        Mes recettes
+      </h1>
+
+      <div className="flex gap-4 mb-6 flex-wrap">
+        <Link
+          href="/ingredients"
+          className="bg-blue-500 text-white px-4 pyassName="bg-green-500 text-white px-4 py-2 rounded"
+        >
+          Ajouter un ingrédient
+        </Link>
+
+      
+          className="bg-orange-500 text-white px-4 py-2 rounded"
+        >
+          Ajouter une recette
+        </Link>
+      </div>
+
+      <ul>
+        {recettes?.map((recette) => (
+          <li key={recette.recette_id}>
+            {recette.nom}
+          </li>
+        ))}
+      </ul>
+    </main>
+  );
+}
+
+
+    xxxc
+    
     <main className="p-6">
       <h1 className="text-2xl font-bold mb-4">
         Mes recettes
