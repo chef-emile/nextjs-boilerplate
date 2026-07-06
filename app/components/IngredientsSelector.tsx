@@ -51,9 +51,14 @@ export default function IngredientsSelector({
         return ingredient && selected.includes(ingredient.nom)
       })
 
- const score =
-    ingredientsRecette.length > 0
-       ? Math.round( (ingredientsTrouves.length / ingredientsRecette.length) * 100 ) : 0
+      const score =
+        ingredientsRecette.length > 0
+          ? Math.round(
+              (ingredientsTrouves.length /
+                ingredientsRecette.length) *
+                100
+            )
+          : 0
 
       return {
         nom: recette.nom,
@@ -61,105 +66,91 @@ export default function IngredientsSelector({
       }
     })
     .filter((r) => r.score > 0)
-    .slice(0, 10)
     .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
 
-
-const getCompatibilityScore = (ingredientId: number) => {
-  return (
-    ingredientsCompatibles.find(
-      (i) => i.id === ingredientId
-    )?.score || 0
-  )
-}
-
-  
-{ingredients.map((ingredient) => {
-const score = getCompatibilityScore(
-  ingredient.ingredient_id
-)
-return (
-  <button
-    key={ingredient.ingredient_id}
-    onClick={() => toggleIngredient(ingredient.nom)}
-    className={`m-1 px-4 py-2 rounded-full border transition-all duration-200 ${
-      selected.includes(ingredient.nom)
-      ? 'bg-green-500 text-white border-green-500'
-      : score > 10
-      ? 'bg-yellow-500'
-      : score > 5
-      ? 'bg-yellow-300'
-      : score > 0
-      ? 'bg-yellow-100'
-      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
-    }`}
-  >
-      {ingredient.nom}
-    </button>
-    )
-  })}
-
-
-const ingredientsCompatibles = ingredients.map((ingredient) => {
-  if (selected.includes(ingredient.nom)) {
-    return {
-      id: ingredient.ingredient_id,
-      score: 0,
+  const ingredientsCompatibles = ingredients.map((ingredient) => {
+    if (selected.includes(ingredient.nom)) {
+      return {
+        id: ingredient.ingredient_id,
+        score: 0,
+      }
     }
-  }
 
-  let score = 0
+    let score = 0
 
-  recettes.forEach((recette) => {
-    const ingredientsRecette = recetteIngredients
-      .filter((ri) => ri.recette_id === recette.recette_id)
-      .map((ri) => ri.ingredient_id)
+    recettes.forEach((recette) => {
+      const ingredientsRecette = recetteIngredients
+        .filter((ri) => ri.recette_id === recette.recette_id)
+        .map((ri) => ri.ingredient_id)
 
-    const recetteContientSelection = selected.every((nom) => {
-      const ingredientSelectionne = ingredients.find(
-        (i) => i.nom === nom
-      )
-
-      return ingredientSelectionne &&
-        ingredientsRecette.includes(
-          ingredientSelectionne.ingredient_id
+      const recetteContientSelection = selected.every((nom) => {
+        const ingredientSelectionne = ingredients.find(
+          (i) => i.nom === nom
         )
+
+        return (
+          ingredientSelectionne &&
+          ingredientsRecette.includes(
+            ingredientSelectionne.ingredient_id
+          )
+        )
+      })
+
+      if (
+        recetteContientSelection &&
+        ingredientsRecette.includes(ingredient.ingredient_id)
+      ) {
+        score++
+      }
     })
 
-    if (
-      recetteContientSelection &&
-      ingredientsRecette.includes(ingredient.ingredient_id)
-    ) {
-      score++
+    return {
+      id: ingredient.ingredient_id,
+      score,
     }
   })
 
-  return {
-    id: ingredient.ingredient_id,
-    score,
+  const getCompatibilityScore = (
+    ingredientId: number
+  ) => {
+    return (
+      ingredientsCompatibles.find(
+        (i) => i.id === ingredientId
+      )?.score || 0
+    )
   }
-})
 
-
-  
   return (
     <div>
-      {ingredients.map((ingredient) => (
-        <button
-          key={ingredient.ingredient_id}
-          onClick={() => toggleIngredient(ingredient.nom)}
+      {ingredients.map((ingredient) => {
+        const score = getCompatibilityScore(
+          ingredient.ingredient_id
+        )
+
+        return (
+          <button
+            key={ingredient.ingredient_id}
+            onClick={() =>
+              toggleIngredient(ingredient.nom)
+            }
             className={`m-1 px-4 py-2 rounded-full border transition-all duration-200 ${
               selected.includes(ingredient.nom)
-                  ? 'bg-green-500 text-white border-green-500'
-                  : getCompatibilityScore(ingredient.ingredient_id) > 0
-                  ? 'bg-yellow-200 border-yellow-500'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                ? 'bg-green-500 text-white border-green-500'
+                : score > 10
+                ? 'bg-yellow-500'
+                : score > 5
+                ? 'bg-yellow-300'
+                : score > 0
+                ? 'bg-yellow-100'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
             }`}
-        >
-          {ingredient.nom}
-          {score > 0 && ` (${score})`}
-        </button>
-      ))}
+          >
+            {ingredient.nom}
+            {score > 0 && ` (${score})`}
+          </button>
+        )
+      })}
 
       <div className="mt-6 p-4 bg-gray-100 rounded-lg">
         <h2 className="font-bold mb-2">
