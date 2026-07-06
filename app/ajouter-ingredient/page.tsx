@@ -13,7 +13,28 @@ export default function AjouterIngredient() {
   const [surgele, setSurgele] = useState(false)
   const [message, setMessage] = useState('')
 
+  const categories = [
+    'Légume',
+    'Fruit',
+    'Viande',
+    'Poisson',
+    'Produit laitier',
+    'Féculent',
+    'Épice',
+    'Aromate',
+    'Condiment',
+    'Épicerie',
+  ]
 
+  const conservations = [
+    'Frais',
+    'Sec',
+    'Surgelé',
+    'Conserve',
+  ]
+
+
+  
   const ajouterIngredient = async () => {
     const { error } = await supabase
       .from('ingredients')
@@ -48,19 +69,37 @@ export default function AjouterIngredient() {
         className="border p-2 rounded mr-2"
       />
 
-      <input
-        className="border p-2 rounded block mb-2"
-        placeholder="Catégorie"
+      <select
         value={categorie}
-        onChange={(e) => setCategorie(e.target.value)}
-      />
+  onChange={(e) => setCategorie(e.target.value)}
+  className="border p-2 rounded block mb-2"
+>
+  <option value="">Choisir une catégorie</option>
+  <option value="Légume">Légume</option>
+  <option value="Fruit">Fruit</option>
+  <option value="Viande">Viande</option>
+  <option value="Poisson">Poisson</option>
+  <option value="Produit laitier">Produit laitier</option>
+  <option value="Féculent">Féculent</option>
+  <option value="Épice">Épice</option>
+  <option value="Aromate">Aromate</option>
+  <option value="Condiment">Condiment</option>
+  <option value="Épicerie">Épicerie</option>
+</select>
 
-      <input
-        className="border p-2 rounded block mb-4"
-        placeholder="Type de conservation"
-        value={typeConservation}
-        onChange={(e) => setTypeConservation(e.target.value)}
-      />
+         <select
+          value={typeConservation}
+          onChange={(e) => setTypeConservation(e.target.value)}
+          className="border p-2 rounded block mb-4"
+        >
+          <option value="">Choisir une conservation</option>
+          <option value="Frais">Frais</option>
+          <option value="Sec">Sec</option>
+          <option value="Surgelé">Surgelé</option>
+          <option value="Conserve">Conserve</option>
+        </select>
+        ``
+    
 
       <label className="block">
         <input
