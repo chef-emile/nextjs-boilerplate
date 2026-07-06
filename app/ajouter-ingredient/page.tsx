@@ -102,8 +102,8 @@ export default function AjouterIngredient() {
       <label className="block">
         <input
           type="checkbox"
-          checked={perissable}
-          onChange={(e) => setPerissable(e.target.checked)}
+          checked={périssable}
+          onChange={(e) => setPérissable(e.target.checked)}
         />
         Périssable
       </label>
