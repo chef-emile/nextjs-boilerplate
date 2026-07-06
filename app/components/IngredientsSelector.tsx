@@ -73,19 +73,26 @@ export default function IngredientsSelector({
 const score = getCompatibilityScore(
   ingredient.ingredient_id
 )
-
-className={`m-1 px-4 py-2 rounded-full border transition-all duration-200 ${
-  selected.includes(ingredient.nom)
-    ? 'bg-green-500 text-white border-green-500'
-    : score > 10
-    ? 'bg-yellow-500'
-    : score > 5
-    ? 'bg-yellow-300'
-    : score > 0
-    ? 'bg-yellow-100'
-    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
-}`}
-``
+return (
+  <button
+    key={ingredient.ingredient_id}
+    onClick={() => toggleIngredient(ingredient.nom)}
+    className={`m-1 px-4 py-2 rounded-full border transition-all duration-200 ${
+      selected.includes(ingredient.nom)
+      ? 'bg-green-500 text-white border-green-500'
+      : score > 10
+      ? 'bg-yellow-500'
+      : score > 5
+      ? 'bg-yellow-300'
+      : score > 0
+      ? 'bg-yellow-100'
+      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+    }`}
+  >
+      {ingredient.nom}
+    </button>
+    )
+  })}
 
 
 const ingredientsCompatibles = ingredients.map((ingredient) => {
