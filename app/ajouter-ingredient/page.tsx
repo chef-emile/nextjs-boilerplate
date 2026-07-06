@@ -7,10 +7,10 @@ export default function AjouterIngredient() {
   const [nom, setNom] = useState('')
   const [categorie, setCategorie] = useState('')
   const [typeConservation, setTypeConservation] = useState('')
-  const [perissable, setPerissable] = useState(false)
+  const [périssable, setPérissable] = useState(false)
   const [frais, setFrais] = useState(false)
   const [sec, setSec] = useState(false)
-  const [surgele, setSurgele] = useState(false)
+  const [surgelé, setSurgelé] = useState(false)
   const [message, setMessage] = useState('')
 
   const categories = [
@@ -45,7 +45,7 @@ export default function AjouterIngredient() {
         perissable,
         frais,
         sec,
-        surgele
+        surgelé
       })
 
     if (error) {
@@ -97,9 +97,7 @@ export default function AjouterIngredient() {
           <option value="Sec">Sec</option>
           <option value="Surgelé">Surgelé</option>
           <option value="Conserve">Conserve</option>
-        </select>
-        ``
-    
+        </select>    
 
       <label className="block">
         <input
@@ -131,8 +129,8 @@ export default function AjouterIngredient() {
       <label className="block mb-4">
         <input
           type="checkbox"
-          checked={surgele}
-          onChange={(e) => setSurgele(e.target.checked)}
+          checked={surgelé}
+          onChange={(e) => setSurgelé(e.target.checked)}
         />
         Surgelé
       </label>
