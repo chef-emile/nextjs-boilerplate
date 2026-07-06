@@ -16,7 +16,7 @@ export default async function Home() {
       <div className="flex gap-4 mb-6 flex-wrap">
         <Link
           href="/ingredients"
-          className="bg-blue-500 text-white px-4 pyassName="bg-green-500 text-white px-4 py-2 rounded"
+          className="bg-blue-500 text-white px-4 py-2 rounded"
         >
           Ajouter un ingrédient
         </Link>
@@ -49,8 +49,7 @@ export default async function Home() {
 
       <Link
         href="/ingredients"
-        className="bg-blue-500 text-white px-4 py-2 rounded"
-      >
+       >
        <ul>
         {recettes?.map(function (recette) {
           return (
