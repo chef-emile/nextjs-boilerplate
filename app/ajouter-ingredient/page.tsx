@@ -42,7 +42,7 @@ export default function AjouterIngredient() {
         nom,
         categorie,
         type_conservation: typeConservation,
-        perissable,
+        périssable,
         frais,
         sec,
         surgelé
