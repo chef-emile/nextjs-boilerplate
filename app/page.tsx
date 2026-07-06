@@ -7,32 +7,30 @@ export default async function Home() {
     .select("*");
 
   return (
-    <main>
-      <h1>Mes recettes</h1>
+    <main className="p-6">
+      <h1 className="text-2xl font-bold mb-4">
+        Mes recettes
+      </h1>
 
- 
-
-<div className="flex gap-4 my-4">
-  <Link
-    href="/ingredients"
-    className="bg-blue-500 text-white px-4 py-2 rounded"
-  >
-    Ajouter un ingrédient
-  </Link>
-
-  -recette"
-    className="bg-orange-500 text-white px-4 py-2 rounded"
-  >
-    Ajouter une recette
-  </Link>
-</div>
+      <div className="flex gap-4 mb-6">
+        <Link
+          href="/ingredients"
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+    -ingredient"
+          className="bg-green-500 text-white px-4 py-2 rounded"
+        >
+     -500 text-white px-4 py-2 rounded"
+        >
+          Ajouter une recette
+        </Link>
+      </div>
 
       <ul>
         {recettes?.map((recette) => (
           <li key={recette.recette_id}>
             {recette.nom}
           </li>
-        )) }
+        ))}
       </ul>
     </main>
   );
