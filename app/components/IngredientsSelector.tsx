@@ -51,7 +51,7 @@ export default function IngredientsSelector({
         return ingredient && selected.includes(ingredient.nom)
       })
 
-  const score =
+ const score =
     ingredientsRecette.length > 0
        ? Math.round( (ingredientsTrouves.length / ingredientsRecette.length) * 100 ) : 0
 
@@ -64,6 +64,16 @@ export default function IngredientsSelector({
     .slice(0, 10)
     .sort((a, b) => b.score - a.score)
 
+
+const getCompatibilityScore = (ingredientId: number) => {
+  return (
+    ingredientsCompatibles.find(
+      (i) => i.id === ingredientId
+    )?.score || 0
+  )
+}
+
+  
 {ingredients.map((ingredient) => {
 const score = getCompatibilityScore(
   ingredient.ingredient_id
@@ -130,13 +140,7 @@ const ingredientsCompatibles = ingredients.map((ingredient) => {
   }
 })
 
-const getCompatibilityScore = (ingredientId: number) => {
-  return (
-    ingredientsCompatibles.find(
-      (i) => i.id === ingredientId
-    )?.score || 0
-  )
-}
+
   
   return (
     <div>
