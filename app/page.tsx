@@ -13,16 +13,18 @@ export default async function Home() {
       </h1>
 
       <div className="flex gap-4 mb-6">
-        <Link
-          href="/ingredients"
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-uter-ingredient"
-          className="bg-green-500 text-whitette"
-          className="bg-orange-500 text-white px-4 py-2 rounded"
+        /ingredientsName="bg-blue-500 text-white px-4 py-2 rounded"
         >
-          Ajouter une recette
+          Explorer les ingrédients
         </Link>
-      </div>
+
+        <Link
+          href="/ajouter-ingredient"
+          className="bg>
+
+        <Link
+          href="/ajouter-recette"
+          className="bg-orange-500>
 
       <ul>
         {recettes?.map((recette) => (
