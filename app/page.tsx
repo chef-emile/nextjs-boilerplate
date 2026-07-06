@@ -12,22 +12,11 @@ export default async function Home() {
         Mes recettes
       </h1>
 
-      <div className="flex gap-4 mb-6">
-        /ingredientsName="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          Explorer les ingrédients
-        </Link>
-
-        <Link
-          href="/ajouter-ingredient"
-          className="bg>
-
-        <Link
-          href="/ajouter-recette"
-          className="bg-orange-500>
-
-      <ul>
-        {recettes?.map((recette) => (
+      <Link
+        href="/ingredients"
+        className="bg-blue-500 text-white px-4 py-2 rounded"
+      >
+       p((recette) => (
           <li key={recette.recette_id}>
             {recette.nom}
           </li>
