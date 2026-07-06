@@ -16,15 +16,16 @@ export default async function Home() {
         <Link
           href="/ingredients"
           className="bg-blue-500 text-white px-4 py-2 rounded"
+uter-ingredient"
+          className="bg-green-500 text-whitette"
+          className="bg-orange-500 text-white px-4 py-2 rounded"
         >
-         e px-4 py-2 rounded"
-        >
-          Ajouter un ingrédient
+          Ajouter une recette
         </Link>
+      </div>
 
-        <Link
-          href="/ajouter-recette"
-          className="bg-orange-500 text-white px-4      {recettes?.map((recette) => (
+      <ul>
+        {recettes?.map((recette) => (
           <li key={recette.recette_id}>
             {recette.nom}
           </li>
