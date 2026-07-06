@@ -1,4 +1,4 @@
-'use client'
+    'use client'
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -8,6 +8,25 @@ export default function AjouterRecette() {
   const [categorie, setCategorie] = useState('')
   const [ingredients, setIngredients] = useState<any[]>([])
   const [selection, setSelection] = useState<number[]>([])
+
+  const enregistrer = async () => {
+    const { data: recette } = await supabase
+    .from('recettes')
+    .insert({
+      nom,
+      categorie,
+    })
+    .select()
+    .single()
+
+    await supabase.from('recette_ingredients').insert(
+  selection.map((ingredientId) => ({
+    recette_id: recette.recette_id,
+    ingredient_id: ingredientId,
+    obligatoire: true,
+  }))
+)
+}
 
   useEffect(() => {
     const chargerIngredients = async () => {
@@ -73,6 +92,14 @@ export default function AjouterRecette() {
           {ingredient.nom}
         </label>
       ))}
+
+
+      <button
+        onClick={enregistrer}
+        className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
+      Enregistrer la recette
+      </button>
     </main>
   )
 }
