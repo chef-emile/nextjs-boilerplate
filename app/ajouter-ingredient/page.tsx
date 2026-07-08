@@ -36,7 +36,7 @@ export default function AjouterIngredient() {
 
   
   const ajouterIngredient = async () => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('ingredients')
       .insert({
         nom,
@@ -48,9 +48,10 @@ export default function AjouterIngredient() {
         surgelé
       })
 
-    if (error) {
-      setMessage(error.message)
-    } else {
+if (error) {
+  console.log(error)
+  setMessage(JSON.stringify(error))
+} else {
       setMessage('Ingrédient ajouté')
       setNom('')
     }
