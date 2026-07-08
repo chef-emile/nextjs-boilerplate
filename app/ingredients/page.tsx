@@ -1,6 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import IngredientsSelector from "@/app/components/IngredientsSelector";
 
+export const dynamic = 'force-dynamic'
+
 export default async function IngredientsPage() {
   const { data: ingredients } = await supabase
     .from("ingredients")
