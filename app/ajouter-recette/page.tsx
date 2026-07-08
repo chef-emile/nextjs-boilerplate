@@ -16,8 +16,14 @@ export default function AjouterRecette() {
         .from('ingredients')
         .select('*')
         .order('nom')
-
       setIngredients(data || [])
+    const { data: recettesData } = await supabase
+      .from('recettes')
+      .select('*')
+      .order('nom')
+
+    setRecettes(recettesData || [])
+      
     }
 
     chargerIngredients()
@@ -29,6 +35,14 @@ export default function AjouterRecette() {
       .includes(recherche.toLowerCase())
   )
 
+const recettesProches = recettes.filter((recette) =>
+  recette.nom
+    .toLowerCase()
+    .includes(nom.toLowerCase())
+)
+const [recettes, setRecettes] = useState<any[]>([])
+
+  
 const enregistrer = async () => {
   console.log("Bouton cliqué")
 
@@ -80,6 +94,21 @@ const enregistrer = async () => {
         className="border p-2 rounded mb-4 block"
       />
 
+    {nom.length > 2 && (
+      <div className="border rounded p-3 mb-4">
+        <h2 className="font-bold mb-2">
+          Recettes similaires
+        </h2>
+
+        {recettesProches.map((recette) => (
+          <div key={recette.recette_id}>
+            {recette.nom}
+          </div>
+        ))}
+      </div>
+    )}
+
+      
       <input
         value={recherche}
         onChange={(e) => setRecherche(e.target.value)}
