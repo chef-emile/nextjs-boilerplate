@@ -20,7 +20,7 @@ export default async function IngredientsPage() {
   return (
     <main>
       <h1>Ingrédients</h1>
-
+      <p>{ingredients?.length} ingrédients</p>
       <IngredientsSelector
         ingredients={ingredients || []}
         recettes={recettes || []}
