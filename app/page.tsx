@@ -39,7 +39,7 @@ export default async function Home() {
         <li key={recette.recette_id}>
           <Link href={`/recettesrecette_id}`}
             {recette.nom}
-        </Link>
+          </Link>
       </li>
 
         
