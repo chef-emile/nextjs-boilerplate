@@ -34,13 +34,14 @@ export default function AjouterRecette() {
       .toLowerCase()
       .includes(recherche.toLowerCase())
   )
-
+const [recettes, setRecettes] = useState<any[]>([])
+  
 const recettesProches = recettes.filter((recette) =>
   recette.nom
     .toLowerCase()
     .includes(nom.toLowerCase())
 )
-const [recettes, setRecettes] = useState<any[]>([])
+
 
   
 const enregistrer = async () => {
