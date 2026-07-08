@@ -9,6 +9,7 @@ export default function AjouterRecette() {
   const [selection, setSelection] = useState<number[]>([])
   const [recherche, setRecherche] = useState('')
   const [message, setMessage] = useState('')
+  const [recettes, setRecettes] = useState<any[]>([])
 
   useEffect(() => {
     const chargerIngredients = async () => {
@@ -34,7 +35,7 @@ export default function AjouterRecette() {
       .toLowerCase()
       .includes(recherche.toLowerCase())
   )
-const [recettes, setRecettes] = useState<any[]>([])
+
   
 const recettesProches = recettes.filter((recette) =>
   recette.nom
