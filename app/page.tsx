@@ -35,7 +35,14 @@ export default async function Home() {
           >
           Ajouter une recette      
          </Link>
-          
+
+        <li key={recette.recette_id}>
+          <Link href={`/recettesrecette_id}`}
+            {recette.nom}
+        </Link>
+      </li>
+
+        
       </div>
 
       <ul>
@@ -45,6 +52,8 @@ export default async function Home() {
           </li>
         ))}
       </ul>
+
+
     </main>
   );
 }
