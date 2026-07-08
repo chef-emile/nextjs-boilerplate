@@ -45,13 +45,7 @@ export default async function Home() {
         
       </div>
 
-      <ul>
-        {recettes?.map((recette) => (
-          <li key={recette.recette_id}>
-            {recette.nom}
-          </li>
-        ))}
-      </ul>
+ 
 
 
     </main>
