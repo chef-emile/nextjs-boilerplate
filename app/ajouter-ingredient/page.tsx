@@ -29,14 +29,20 @@ export default function AjouterRecette() {
       .includes(recherche.toLowerCase())
   )
 
-  const enregistrer = async () => {
-    const { data: recette, error } = await supabase
-      .from('recettes')
-      .insert({
-        nom,
-      })
-      .select()
-      .single()
+const enregistrer = async () => {
+  console.log("Bouton cliqué")
+
+  const { data: recette, error } = await supabase
+    .from('recettes')
+    .insert({
+      nom,
+    })
+    .select()
+    .single()
+
+  console.log(recette)
+  console.log(error)
+}
 
     if (error) {
       setMessage(error.message)
