@@ -1,150 +1,128 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
-export default function AjouterIngredient() {
+export default function AjouterRecette() {
   const [nom, setNom] = useState('')
-  const [categorie, setCategorie] = useState('')
-  const [typeConservation, setTypeConservation] = useState('')
-  const [périssable, setPérissable] = useState(false)
-  const [frais, setFrais] = useState(false)
-  const [sec, setSec] = useState(false)
-  const [surgelé, setSurgelé] = useState(false)
+  const [ingredients, setIngredients] = useState<any[]>([])
+  const [selection, setSelection] = useState<number[]>([])
+  const [recherche, setRecherche] = useState('')
   const [message, setMessage] = useState('')
 
-  const categories = [
-    'Légume',
-    'Fruit',
-    'Viande',
-    'Poisson',
-    'Produit laitier',
-    'Féculent',
-    'Épice',
-    'Aromate',
-    'Condiment',
-    'Épicerie',
-  ]
+  useEffect(() => {
+    const chargerIngredients = async () => {
+      const { data } = await supabase
+        .from('ingredients')
+        .select('*')
+        .order('nom')
 
-  const conservations = [
-    'Frais',
-    'Sec',
-    'Surgelé',
-    'Conserve',
-  ]
+      setIngredients(data || [])
+    }
 
+    chargerIngredients()
+  }, [])
 
-  
-  const ajouterIngredient = async () => {
-    const { data, error } = await supabase
-      .from('ingredients')
+  const ingredientsFiltres = ingredients.filter((ingredient) =>
+    ingredient.nom
+      .toLowerCase()
+      .includes(recherche.toLowerCase())
+  )
+
+  const enregistrer = async () => {
+    const { data: recette, error } = await supabase
+      .from('recettes')
       .insert({
         nom,
-        categorie,
-        type_conservation: typeConservation,
-        périssable,
-        frais,
-        sec,
-        surgelé
       })
+      .select()
+      .single()
 
-if (error) {
-  console.log(error)
-  setMessage(JSON.stringify(error))
-} else {
-      setMessage('Ingrédient ajouté')
-      setNom('')
+    if (error) {
+      setMessage(error.message)
+      return
     }
+
+    const { error: liaisonError } = await supabase
+      .from('recette_ingredients')
+      .insert(
+        selection.map((ingredientId) => ({
+          recette_id: recette.recette_id,
+          ingredient_id: ingredientId,
+          obligatoire: true,
+        }))
+      )
+
+    if (liaisonError) {
+      setMessage(liaisonError.message)
+      return
+    }
+
+    setMessage('Recette ajoutée')
   }
 
   return (
     <main className="p-6">
       <h1 className="text-2xl font-bold mb-4">
-        Ajouter un ingrédient
+        Ajouter une recette
       </h1>
 
       <input
         value={nom}
         onChange={(e) => setNom(e.target.value)}
-        placeholder="Nom de l'ingrédient"
-        className="border p-2 rounded mr-2"
+        placeholder="Nom de la recette"
+        className="border p-2 rounded mb-4 block"
       />
 
-      <select
-        value={categorie}
-  onChange={(e) => setCategorie(e.target.value)}
-  className="border p-2 rounded block mb-2"
->
-  <option value="">Choisir une catégorie</option>
-  <option value="Légume">Légume</option>
-  <option value="Fruit">Fruit</option>
-  <option value="Viande">Viande</option>
-  <option value="Poisson">Poisson</option>
-  <option value="Produit laitier">Produit laitier</option>
-  <option value="Féculent">Féculent</option>
-  <option value="Épice">Épice</option>
-  <option value="Aromate">Aromate</option>
-  <option value="Condiment">Condiment</option>
-  <option value="Épicerie">Épicerie</option>
-</select>
+      <input
+        value={recherche}
+        onChange={(e) => setRecherche(e.target.value)}
+        placeholder="Rechercher un ingrédient..."
+        className="border p-2 rounded mb-4 block w-full"
+      />
 
-         <select
-          value={typeConservation}
-          onChange={(e) => setTypeConservation(e.target.value)}
-          className="border p-2 rounded block mb-4"
-        >
-          <option value="">Choisir une conservation</option>
-          <option value="Frais">Frais</option>
-          <option value="Sec">Sec</option>
-          <option value="Surgelé">Surgelé</option>
-          <option value="Conserve">Conserve</option>
-        </select>    
+      <div className="max-h-96 overflow-auto">
+        {ingredientsFiltres.map((ingredient) => (
+          <label
+            key={ingredient.ingredient_id}
+            className="block"
+          >
+            <input
+              type="checkbox"
+              checked={selection.includes(
+                ingredient.ingredient_id
+              )}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelection([
+                    ...selection,
+                    ingredient.ingredient_id,
+                  ])
+                } else {
+                  setSelection(
+                    selection.filter(
+                      (id) =>
+                        id !== ingredient.ingredient_id
+                    )
+                  )
+                }
+              }}
+            />
 
-      <label className="block">
-        <input
-          type="checkbox"
-          checked={périssable}
-          onChange={(e) => setPérissable(e.target.checked)}
-        />
-        Périssable
-      </label>
-
-      <label className="block">
-        <input
-          type="checkbox"
-          checked={frais}
-          onChange={(e) => setFrais(e.target.checked)}
-        />
-        Frais
-      </label>
-
-      <label className="block">
-        <input
-          type="checkbox"
-          checked={sec}
-          onChange={(e) => setSec(e.target.checked)}
-        />
-        Sec
-      </label>
-
-      <label className="block mb-4">
-        <input
-          type="checkbox"
-          checked={surgelé}
-          onChange={(e) => setSurgelé(e.target.checked)}
-        />
-        Surgelé
-      </label>
+            {' '}
+            {ingredient.nom}
+          </label>
+        ))}
+      </div>
 
       <button
-        onClick={ajouterIngredient}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
+        onClick={enregistrer}
+        className="bg-green-500 text-white px-4 py-2 rounded mt-4"
       >
-        Ajouter
+        Enregistrer la recette
       </button>
 
       <p className="mt-4">{message}</p>
     </main>
   )
 }
-
