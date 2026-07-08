@@ -36,15 +36,16 @@ export default async function Home() {
           Ajouter une recette      
          </Link>
 
-        <li key={recette.recette_id}>
-          <Link href={`/recettesrecette_id}`}
-            {recette.nom}
-          </Link>
-      </li>
-
         
       </div>
-
+      
+      <ul>
+        {recettes?.map((recette) => (
+          <li key={recette.recette_id}>
+            {recette.nom}
+          </li>
+        ))}
+      </ul>
  
 
 
