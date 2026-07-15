@@ -1,10 +1,23 @@
 import { supabase } from "../lib/supabase";
 import Link from "next/link";
+import RecettesListe from "./components/RecettesListe";
 export const dynamic = 'force-dynamic'
 export default async function Home() {
   const { data: recettes } = await supabase
     .from("recettes")
+    .select("*")
+    .order("nom");
+
+  const { data: tags } = await supabase
+    .from("tags")
+    .select("*")
+    .eq("portee", "recette")
+    .order("nom");
+
+  const { data: recetteTags } = await supabase
+    .from("recette_tags")
     .select("*");
+
   return (
     <main className="p-6">
       <h1 className="text-2xl font-bold mb-4">
@@ -17,34 +30,25 @@ export default async function Home() {
         >
           Explorer les ingrédients
         </Link>
-         <Link
+        <Link
           href="/ajouter-ingredient"
           className="bg-blue-500 text-white px-4 py-2 rounded"
-          >
-          Ajouter un ingrédient      
+        >
+          Ajouter un ingrédient
         </Link>
         <Link
           href="/ajouter-recette"
           className="bg-blue-500 text-white px-4 py-2 rounded"
-          >
-          Ajouter une recette      
-         </Link>
-        
+        >
+          Ajouter une recette
+        </Link>
       </div>
-      
-      <ul>
-        {recettes?.map((recette) => (
-          <li key={recette.recette_id} className="mb-1">
-            <Link
-              href={`/recettes/${recette.recette_id}`}
-              className="text-blue-600 hover:underline"
-            >
-              {recette.nom}
-            </Link>
-          </li>
-        ))}
-      </ul>
- 
+
+      <RecettesListe
+        recettes={recettes || []}
+        tags={tags || []}
+        recetteTags={recetteTags || []}
+      />
     </main>
   );
 }
