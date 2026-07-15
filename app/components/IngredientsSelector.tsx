@@ -18,23 +18,47 @@ type RecetteIngredient = {
   obligatoire: boolean
 }
 
+type Tag = {
+  tag_id: number
+  nom: string
+  portee: string
+}
+
+type IngredientTag = {
+  ingredient_id: number
+  tag_id: number
+}
+
 export default function IngredientsSelector({
   ingredients,
   recettes,
   recetteIngredients,
+  tags = [],
+  ingredientTags = [],
 }: {
   ingredients: Ingredient[]
   recettes: Recette[]
   recetteIngredients: RecetteIngredient[]
+  tags?: Tag[]
+  ingredientTags?: IngredientTag[]
 }) {
   const [selected, setSelected] = useState<string[]>([])
-  const [selectedRecipe, setSelectedRecipe] =  useState<string | null>(null)
+  const [selectedRecipe, setSelectedRecipe] = useState<string | null>(null)
+  const [tagsFiltre, setTagsFiltre] = useState<number[]>([])
 
   const toggleIngredient = (nom: string) => {
     setSelected((current) =>
       current.includes(nom)
         ? current.filter((i) => i !== nom)
         : [...current, nom]
+    )
+  }
+
+  const toggleTagFiltre = (tagId: number) => {
+    setTagsFiltre((current) =>
+      current.includes(tagId)
+        ? current.filter((id) => id !== tagId)
+        : [...current, tagId]
     )
   }
 
@@ -112,29 +136,54 @@ export default function IngredientsSelector({
     }
   })
 
-  const getCompatibilityScore = (
-    ingredientId: number
-  ) => {
+  const getCompatibilityScore = (ingredientId: number) => {
     return (
-      ingredientsCompatibles.find(
-        (i) => i.id === ingredientId
-      )?.score || 0
+      ingredientsCompatibles.find((i) => i.id === ingredientId)?.score || 0
     )
   }
 
+  const ingredientsAffiches =
+    tagsFiltre.length === 0
+      ? ingredients
+      : ingredients.filter((ingredient) => {
+          const tagsDeLIngredient = ingredientTags
+            .filter((it) => it.ingredient_id === ingredient.ingredient_id)
+            .map((it) => it.tag_id)
+          return tagsFiltre.every((tagId) =>
+            tagsDeLIngredient.includes(tagId)
+          )
+        })
+
   return (
     <div>
-      {ingredients.map((ingredient) => {
-        const score = getCompatibilityScore(
-          ingredient.ingredient_id
-        )
+      {tags.length > 0 && (
+        <div className="mb-4">
+          <p className="text-sm font-semibold mb-2">Filtrer par tag :</p>
+          <div className="flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <button
+                key={tag.tag_id}
+                onClick={() => toggleTagFiltre(tag.tag_id)}
+                className={`px-3 py-1 rounded-full text-sm border ${
+                  tagsFiltre.includes(tag.tag_id)
+                    ? 'bg-purple-500 text-white border-purple-500'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                {tag.nom}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {ingredientsAffiches.map((ingredient) => {
+        const score = getCompatibilityScore(ingredient.ingredient_id)
 
         return (
           <button
             key={ingredient.ingredient_id}
-            onClick={() =>
-              toggleIngredient(ingredient.nom)
-            }
+            onClick={() => toggleIngredient(ingredient.nom)}
             className={`m-1 px-4 py-2 rounded-full border transition-all duration-200 ${
               selected.includes(ingredient.nom)
                 ? 'bg-green-500 text-white border-green-500'
@@ -153,10 +202,14 @@ export default function IngredientsSelector({
         )
       })}
 
+      {ingredientsAffiches.length === 0 && (
+        <p className="text-gray-500 mt-4">
+          Aucun ingrédient pour ces tags.
+        </p>
+      )}
+
       <div className="mt-6 p-4 bg-gray-100 rounded-lg">
-        <h2 className="font-bold mb-2">
-          Ingrédients sélectionnés :
-        </h2>
+        <h2 className="font-bold mb-2">Ingrédients sélectionnés :</h2>
 
         <div className="flex flex-wrap gap-2">
           {selected.map((ingredient) => (
@@ -171,17 +224,15 @@ export default function IngredientsSelector({
       </div>
 
       <div className="mt-6">
-        <h2 className="text-xl font-bold mb-4">
-          Recettes compatibles
-        </h2>
+        <h2 className="text-xl font-bold mb-4">Recettes compatibles</h2>
 
         <div className="bg-white border rounded-lg p-4">
           {recettesCompatibles.map((recette) => (
-           <button
-            key={recette.nom}
-            onClick={() => setSelectedRecipe(recette.nom)}
-            className="w-full flex justify-between border-b py-2 hover:bg-gray-100"
-          >
+            <button
+              key={recette.nom}
+              onClick={() => setSelectedRecipe(recette.nom)}
+              className="w-full flex justify-between border-b py-2 hover:bg-gray-100"
+            >
               <span>{recette.nom}</span>
               <span>{recette.score}%</span>
             </button>
@@ -189,14 +240,11 @@ export default function IngredientsSelector({
         </div>
 
         {selectedRecipe && (
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <h2 className="font-bold">
-            Recette sélectionnée
-          </h2>
-
-          <p>{selectedRecipe}</p>
-      </div>
-    )}
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <h2 className="font-bold">Recette sélectionnée</h2>
+            <p>{selectedRecipe}</p>
+          </div>
+        )}
       </div>
     </div>
   )
