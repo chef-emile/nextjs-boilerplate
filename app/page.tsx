@@ -41,9 +41,11 @@ export default async function Home() {
       
       <ul>
         {recettes?.map((recette) => (
-          <li key={recette.recette_id}>
+         <li key={recette.recette_id}>
+          <Link href={`/recettes/${recette.recette_id}`} className="text-blue-500 hover:underline">
             {recette.nom}
-          </li>
+          </Link>
+        </li>
         ))}
       </ul>
  
