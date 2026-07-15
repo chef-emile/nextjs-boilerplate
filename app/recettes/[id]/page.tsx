@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import RecetteDetail from "./RecetteDetail";
 
 export const dynamic = "force-dynamic";
 
@@ -7,17 +8,37 @@ export default async function RecettePage({
 }: {
   params: { id: string };
 }) {
+  const recetteId = Number(params.id);
+
   const { data: recette } = await supabase
     .from("recettes")
     .select("*")
-    .eq("recette_id", params.id)
+    .eq("recette_id", recetteId)
     .single();
 
+  if (!recette) {
+    return (
+      <main className="p-6">
+        <p>Recette introuvable.</p>
+      </main>
+    );
+  }
+
+  const { data: recetteIngredients } = await supabase
+    .from("recette_ingredients")
+    .select("*")
+    .eq("recette_id", recetteId);
+
+  const { data: ingredients } = await supabase
+    .from("ingredients")
+    .select("*")
+    .order("nom");
+
   return (
-    <main className="p-6">
-      <h1 className="text-3xl font-bold">
-        {recette.nom}
-      </h1>
-    </main>
+    <RecetteDetail
+      recette={recette}
+      recetteIngredientsInitial={recetteIngredients || []}
+      ingredients={ingredients || []}
+    />
   );
 }
