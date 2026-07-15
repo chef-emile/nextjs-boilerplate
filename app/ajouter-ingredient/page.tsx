@@ -25,9 +25,7 @@ export default function AjouterIngredient() {
   const [surgelé, setSurgelé] = useState(false)
   const [message, setMessage] = useState('')
 
-  const [ingredientsExistants, setIngredientsExistants] = useState
-    IngredientExistant[]
-  >([])
+  const [ingredientsExistants, setIngredientsExistants] = useState<IngredientExistant[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [tagsSelection, setTagsSelection] = useState<number[]>([])
 
