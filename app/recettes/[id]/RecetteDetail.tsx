@@ -37,9 +37,7 @@ export default function RecetteDetail({
   const [editionNom, setEditionNom] = useState(false)
   const [nomTemp, setNomTemp] = useState(recette.nom)
 
-  const [recetteIngredients, setRecetteIngredients] = useState
-    RecetteIngredient[]
-  >(recetteIngredientsInitial)
+  const [recetteIngredients, setRecetteIngredients] = useState<RecetteIngredient[]>(recetteIngredientsInitial)
 
   const [recherche, setRecherche] = useState('')
   const [obligatoireNouveau, setObligatoireNouveau] = useState(true)
