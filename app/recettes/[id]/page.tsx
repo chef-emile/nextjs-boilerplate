@@ -6,9 +6,10 @@ export const dynamic = "force-dynamic";
 export default async function RecettePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const recetteId = Number(params.id);
+  const { id } = await params;
+  const recetteId = Number(id);
 
   const { data: recette } = await supabase
     .from("recettes")
