@@ -1,7 +1,19 @@
 'use client'
-
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import TagSelector from '@/app/components/TagSelector'
+import { trouverElementsProches } from '@/lib/similarite'
+
+type Tag = {
+  tag_id: number
+  nom: string
+  portee: string
+}
+
+type IngredientExistant = {
+  ingredient_id: number
+  nom: string
+}
 
 export default function AjouterIngredient() {
   const [nom, setNom] = useState('')
@@ -12,6 +24,30 @@ export default function AjouterIngredient() {
   const [sec, setSec] = useState(false)
   const [surgelé, setSurgelé] = useState(false)
   const [message, setMessage] = useState('')
+
+  const [ingredientsExistants, setIngredientsExistants] = useState
+    IngredientExistant[]
+  >([])
+  const [tags, setTags] = useState<Tag[]>([])
+  const [tagsSelection, setTagsSelection] = useState<number[]>([])
+
+  useEffect(() => {
+    const charger = async () => {
+      const { data: ingredientsData } = await supabase
+        .from('ingredients')
+        .select('ingredient_id, nom')
+        .order('nom')
+      setIngredientsExistants(ingredientsData || [])
+
+      const { data: tagsData } = await supabase
+        .from('tags')
+        .select('*')
+        .eq('portee', 'ingredient')
+        .order('nom')
+      setTags(tagsData || [])
+    }
+    charger()
+  }, [])
 
   const categories = [
     'Légume',
@@ -26,16 +62,29 @@ export default function AjouterIngredient() {
     'Épicerie',
   ]
 
-  const conservations = [
-    'Frais',
-    'Sec',
-    'Surgelé',
-    'Conserve',
-  ]
+  const ingredientsProches = trouverElementsProches(
+    nom,
+    ingredientsExistants,
+    (i) => i.nom
+  )
 
+  const correspondanceExacte = ingredientsProches.find(
+    (i) => i.scoreSimilarite >= 0.9
+  )
 
-  
   const ajouterIngredient = async () => {
+    if (nom.trim().length === 0) {
+      setMessage('Le nom est obligatoire.')
+      return
+    }
+
+    if (correspondanceExacte) {
+      const confirmation = confirm(
+        `Un ingrédient très proche existe déjà : "${correspondanceExacte.nom}". Ajouter quand même "${nom}" ?`
+      )
+      if (!confirmation) return
+    }
+
     const { data, error } = await supabase
       .from('ingredients')
       .insert({
@@ -45,15 +94,42 @@ export default function AjouterIngredient() {
         périssable,
         frais,
         sec,
-        surgelé
+        surgelé,
       })
+      .select()
+      .single()
 
-if (error) {
-  console.log(error)
-  setMessage(JSON.stringify(error))
-} else {
-      setMessage('Ingrédient ajouté')
-      setNom('')
+    if (error) {
+      console.log(error)
+      setMessage(JSON.stringify(error))
+      return
+    }
+
+    if (tagsSelection.length > 0 && data) {
+      const { error: tagError } = await supabase
+        .from('ingredient_tags')
+        .insert(
+          tagsSelection.map((tagId) => ({
+            ingredient_id: data.ingredient_id,
+            tag_id: tagId,
+          }))
+        )
+      if (tagError) {
+        setMessage(
+          `Ingrédient ajouté, mais erreur sur les tags : ${tagError.message}`
+        )
+        return
+      }
+    }
+
+    setMessage('Ingrédient ajouté')
+    setNom('')
+    setTagsSelection([])
+    if (data) {
+      setIngredientsExistants([
+        ...ingredientsExistants,
+        { ingredient_id: data.ingredient_id, nom: data.nom },
+      ])
     }
   }
 
@@ -70,35 +146,48 @@ if (error) {
         className="border p-2 rounded mr-2"
       />
 
+      {ingredientsProches.length > 0 && (
+        <div className="border border-yellow-300 bg-yellow-50 rounded p-3 my-2 max-w-md">
+          <p className="text-sm font-semibold mb-1">
+            Ingrédients proches déjà existants :
+          </p>
+          <ul className="text-sm">
+            {ingredientsProches.map((i) => (
+              <li key={i.ingredient_id}>
+                {i.nom}{' '}
+                <span className="text-gray-500">
+                  ({Math.round(i.scoreSimilarite * 100)}%)
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <select
         value={categorie}
-  onChange={(e) => setCategorie(e.target.value)}
-  className="border p-2 rounded block mb-2"
->
-  <option value="">Choisir une catégorie</option>
-  <option value="Légume">Légume</option>
-  <option value="Fruit">Fruit</option>
-  <option value="Viande">Viande</option>
-  <option value="Poisson">Poisson</option>
-  <option value="Produit laitier">Produit laitier</option>
-  <option value="Féculent">Féculent</option>
-  <option value="Épice">Épice</option>
-  <option value="Aromate">Aromate</option>
-  <option value="Condiment">Condiment</option>
-  <option value="Épicerie">Épicerie</option>
-</select>
+        onChange={(e) => setCategorie(e.target.value)}
+        className="border p-2 rounded block mb-2"
+      >
+        <option value="">Choisir une catégorie</option>
+        {categories.map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+      </select>
 
-         <select
-          value={typeConservation}
-          onChange={(e) => setTypeConservation(e.target.value)}
-          className="border p-2 rounded block mb-4"
-        >
-          <option value="">Choisir une conservation</option>
-          <option value="Frais">Frais</option>
-          <option value="Sec">Sec</option>
-          <option value="Surgelé">Surgelé</option>
-          <option value="Conserve">Conserve</option>
-        </select>    
+      <select
+        value={typeConservation}
+        onChange={(e) => setTypeConservation(e.target.value)}
+        className="border p-2 rounded block mb-4"
+      >
+        <option value="">Choisir une conservation</option>
+        <option value="Frais">Frais</option>
+        <option value="Sec">Sec</option>
+        <option value="Surgelé">Surgelé</option>
+        <option value="Conserve">Conserve</option>
+      </select>
 
       <label className="block">
         <input
@@ -108,7 +197,6 @@ if (error) {
         />
         Périssable
       </label>
-
       <label className="block">
         <input
           type="checkbox"
@@ -117,7 +205,6 @@ if (error) {
         />
         Frais
       </label>
-
       <label className="block">
         <input
           type="checkbox"
@@ -126,7 +213,6 @@ if (error) {
         />
         Sec
       </label>
-
       <label className="block mb-4">
         <input
           type="checkbox"
@@ -136,13 +222,23 @@ if (error) {
         Surgelé
       </label>
 
+      <div className="mb-4 max-w-md">
+        <p className="font-semibold mb-2">Tags</p>
+        <TagSelector
+          portee="ingredient"
+          tagsDisponibles={tags}
+          selection={tagsSelection}
+          onChange={setTagsSelection}
+          onTagCree={(tag) => setTags([...tags, tag])}
+        />
+      </div>
+
       <button
         onClick={ajouterIngredient}
         className="bg-blue-500 text-white px-4 py-2 rounded"
       >
         Ajouter
       </button>
-
       <p className="mt-4">{message}</p>
     </main>
   )
