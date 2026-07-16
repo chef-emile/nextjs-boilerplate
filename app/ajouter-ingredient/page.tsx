@@ -17,15 +17,11 @@ type IngredientExistant = {
 
 export default function AjouterIngredient() {
   const [nom, setNom] = useState('')
-  const [categorie, setCategorie] = useState('')
-  const [typeConservation, setTypeConservation] = useState('')
-  const [périssable, setPérissable] = useState(false)
-  const [frais, setFrais] = useState(false)
-  const [sec, setSec] = useState(false)
-  const [surgelé, setSurgelé] = useState(false)
   const [message, setMessage] = useState('')
 
-  const [ingredientsExistants, setIngredientsExistants] = useState<IngredientExistant[]>([])
+  const [ingredientsExistants, setIngredientsExistants] = useState
+    IngredientExistant[]
+  >([])
   const [tags, setTags] = useState<Tag[]>([])
   const [tagsSelection, setTagsSelection] = useState<number[]>([])
 
@@ -46,19 +42,6 @@ export default function AjouterIngredient() {
     }
     charger()
   }, [])
-
-  const categories = [
-    'Légume',
-    'Fruit',
-    'Viande',
-    'Poisson',
-    'Produit laitier',
-    'Féculent',
-    'Épice',
-    'Aromate',
-    'Condiment',
-    'Épicerie',
-  ]
 
   const ingredientsProches = trouverElementsProches(
     nom,
@@ -87,12 +70,6 @@ export default function AjouterIngredient() {
       .from('ingredients')
       .insert({
         nom,
-        categorie,
-        type_conservation: typeConservation,
-        périssable,
-        frais,
-        sec,
-        surgelé,
       })
       .select()
       .single()
@@ -141,11 +118,11 @@ export default function AjouterIngredient() {
         value={nom}
         onChange={(e) => setNom(e.target.value)}
         placeholder="Nom de l'ingrédient"
-        className="border p-2 rounded mr-2"
+        className="border p-2 rounded mb-2 block w-full max-w-md"
       />
 
       {ingredientsProches.length > 0 && (
-        <div className="border border-yellow-300 bg-yellow-50 rounded p-3 my-2 max-w-md">
+        <div className="border border-yellow-300 bg-yellow-50 rounded p-3 mb-4 max-w-md">
           <p className="text-sm font-semibold mb-1">
             Ingrédients proches déjà existants :
           </p>
@@ -161,64 +138,6 @@ export default function AjouterIngredient() {
           </ul>
         </div>
       )}
-
-      <select
-        value={categorie}
-        onChange={(e) => setCategorie(e.target.value)}
-        className="border p-2 rounded block mb-2"
-      >
-        <option value="">Choisir une catégorie</option>
-        {categories.map((c) => (
-          <option key={c} value={c}>
-            {c}
-          </option>
-        ))}
-      </select>
-
-      <select
-        value={typeConservation}
-        onChange={(e) => setTypeConservation(e.target.value)}
-        className="border p-2 rounded block mb-4"
-      >
-        <option value="">Choisir une conservation</option>
-        <option value="Frais">Frais</option>
-        <option value="Sec">Sec</option>
-        <option value="Surgelé">Surgelé</option>
-        <option value="Conserve">Conserve</option>
-      </select>
-
-      <label className="block">
-        <input
-          type="checkbox"
-          checked={périssable}
-          onChange={(e) => setPérissable(e.target.checked)}
-        />
-        Périssable
-      </label>
-      <label className="block">
-        <input
-          type="checkbox"
-          checked={frais}
-          onChange={(e) => setFrais(e.target.checked)}
-        />
-        Frais
-      </label>
-      <label className="block">
-        <input
-          type="checkbox"
-          checked={sec}
-          onChange={(e) => setSec(e.target.checked)}
-        />
-        Sec
-      </label>
-      <label className="block mb-4">
-        <input
-          type="checkbox"
-          checked={surgelé}
-          onChange={(e) => setSurgelé(e.target.checked)}
-        />
-        Surgelé
-      </label>
 
       <div className="mb-4 max-w-md">
         <p className="font-semibold mb-2">Tags</p>
