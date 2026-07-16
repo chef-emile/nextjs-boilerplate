@@ -36,21 +36,13 @@ type ResolutionIngredient = {
 }
 
 export default function ImportRecettes() {
-  const [ingredientsExistants, setIngredientsExistants] = useState
-    IngredientExistant[]
-  >([])
-  const [recettesExistantes, setRecettesExistantes] = useState
-    RecetteExistante[]
-  >([])
+  const [ingredientsExistants, setIngredientsExistants] = useState<IngredientExistant[]>([])
+  const [recettesExistantes, setRecettesExistantes] = useState<RecetteExistante[]>([])
   const [tagsExistants, setTagsExistants] = useState<TagCache[]>([])
 
   const [lignes, setLignes] = useState<LigneRecette[]>([])
-  const [decisionsRecettes, setDecisionsRecettes] = useState
-    DecisionRecette[]
-  >([])
-  const [resolutions, setResolutions] = useState
-    Record<string, ResolutionIngredient>
-  >({})
+  const [decisionsRecettes, setDecisionsRecettes] = useState<DecisionRecette[]>([])
+  const [resolutions, setResolutions] = useState<Record<string, ResolutionIngredient>>({})
 
   const [nomFichier, setNomFichier] = useState('')
   const [enCours, setEnCours] = useState(false)
