@@ -42,6 +42,12 @@ export default async function Home() {
         >
           Ajouter une recette
         </Link>
+        <Link
+          href="/import"
+          className="bg-purple-500 text-white px-4 py-2 rounded"
+        >
+          Import en masse
+        </Link>
       </div>
 
       <RecettesListe
