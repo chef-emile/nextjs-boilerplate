@@ -35,11 +35,24 @@ export default async function RecettePage({
     .select("*")
     .order("nom");
 
+  const { data: tags } = await supabase
+    .from("tags")
+    .select("*")
+    .eq("portee", "recette")
+    .order("nom");
+
+  const { data: recetteTags } = await supabase
+    .from("recette_tags")
+    .select("*")
+    .eq("recette_id", recetteId);
+
   return (
     <RecetteDetail
       recette={recette}
       recetteIngredientsInitial={recetteIngredients || []}
       ingredients={ingredients || []}
+      tagsDisponibles={tags || []}
+      recetteTagsInitial={recetteTags || []}
     />
   );
 }
