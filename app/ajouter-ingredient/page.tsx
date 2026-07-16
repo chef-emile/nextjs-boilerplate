@@ -19,9 +19,7 @@ export default function AjouterIngredient() {
   const [nom, setNom] = useState('')
   const [message, setMessage] = useState('')
 
-  const [ingredientsExistants, setIngredientsExistants] = useState
-    IngredientExistant[]
-  >([])
+  const [ingredientsExistants, setIngredientsExistants] = useState<IngredientExistant[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [tagsSelection, setTagsSelection] = useState<number[]>([])
 
