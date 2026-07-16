@@ -22,13 +22,9 @@ type Decision = {
 }
 
 export default function ImportIngredients() {
-  const [ingredientsExistants, setIngredientsExistants] = useState
-    IngredientExistant[]
-  >([])
+  const [ingredientsExistants, setIngredientsExistants] = useState<IngredientExistant[]>([])
   const [tagsExistants, setTagsExistants] = useState<TagCache[]>([])
-  const [ingredientTagsExistants, setIngredientTagsExistants] = useState
-    { ingredient_id: number; tag_id: number }[]
-  >([])
+  const [ingredientTagsExistants, setIngredientTagsExistants] = useState<{ ingredient_id: number; tag_id: number }[]>([])
 
   const [lignes, setLignes] = useState<LigneIngredient[]>([])
   const [decisions, setDecisions] = useState<Decision[]>([])
