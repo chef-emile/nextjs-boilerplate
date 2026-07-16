@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { couleurTag } from '@/lib/tagColor'
 
 type Recette = {
   recette_id: number
@@ -50,44 +51,89 @@ export default function RecettesListe({
           )
         })
 
+  const tagsDe = (recetteId: number) =>
+    recetteTags
+      .filter((rt) => rt.recette_id === recetteId)
+      .map((rt) => tags.find((t) => t.tag_id === rt.tag_id))
+      .filter((t): t is Tag => t !== undefined)
+
   return (
     <div>
       {tags.length > 0 && (
-        <div className="mb-4">
-          <p className="text-sm font-semibold mb-2">Filtrer par tag :</p>
+        <div className="mb-8">
+          <p className="font-mono text-xs tracking-widest text-texte-muted uppercase mb-3">
+            Filtrer par tag
+          </p>
           <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <button
-                key={tag.tag_id}
-                onClick={() => toggleTag(tag.tag_id)}
-                className={`px-3 py-1 rounded-full text-sm border ${
-                  tagsSelectionnes.includes(tag.tag_id)
-                    ? 'bg-purple-500 text-white border-purple-500'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
-                }`}
-              >
-                {tag.nom}
-              </button>
-            ))}
+            {tags.map((tag) => {
+              const couleur = couleurTag(tag.nom)
+              const actif = tagsSelectionnes.includes(tag.tag_id)
+              return (
+                <button
+                  key={tag.tag_id}
+                  onClick={() => toggleTag(tag.tag_id)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs border transition-colors"
+                  style={{
+                    borderColor: actif ? couleur : '#3A342A',
+                    color: actif ? couleur : '#9C9284',
+                    backgroundColor: actif ? `${couleur}1A` : 'transparent',
+                  }}
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: couleur }}
+                  />
+                  {tag.nom}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
 
-      <ul>
-        {recettesFiltrees.map((recette) => (
-          <li key={recette.recette_id} className="mb-1">
-            <Link
-              href={`/recettes/${recette.recette_id}`}
-              className="text-blue-600 hover:underline"
-            >
-              {recette.nom}
-            </Link>
-          </li>
-        ))}
-      </ul>
-
-      {recettesFiltrees.length === 0 && (
-        <p className="text-gray-500">Aucune recette pour ces tags.</p>
+      {recettesFiltrees.length === 0 ? (
+        <p className="text-texte-muted">Aucune recette pour ces tags.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {recettesFiltrees.map((recette) => {
+            const tagsRecette = tagsDe(recette.recette_id)
+            return (
+              <Link
+                key={recette.recette_id}
+                href={`/recettes/${recette.recette_id}`}
+                className="block rounded-xl overflow-hidden bg-surface hover:bg-surface-2 transition-colors"
+              >
+                <div className="h-36 bg-surface-2 flex items-center justify-center">
+                  <i className="text-texte-muted text-2xl">🍽</i>
+                </div>
+                <div className="p-4">
+                  <p className="font-display italic text-2xl text-texte mb-2">
+                    {recette.nom}
+                  </p>
+                  {tagsRecette.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {tagsRecette.map((tag) => {
+                        const couleur = couleurTag(tag.nom)
+                        return (
+                          <span
+                            key={tag.tag_id}
+                            className="flex items-center gap-1.5 text-xs text-texte-muted"
+                          >
+                            <span
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{ backgroundColor: couleur }}
+                            />
+                            {tag.nom}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            )
+          })}
+        </div>
       )}
     </div>
   )
