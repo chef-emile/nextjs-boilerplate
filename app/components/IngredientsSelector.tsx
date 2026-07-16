@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 
 type Ingredient = {
   ingredient_id: number
@@ -14,7 +15,7 @@ type Recette = {
 
 type RecetteIngredient = {
   recette_id: number
-  ingredient_id: number 
+  ingredient_id: number
   obligatoire: boolean
 }
 
@@ -181,24 +182,35 @@ export default function IngredientsSelector({
         const score = getCompatibilityScore(ingredient.ingredient_id)
 
         return (
-          <button
+          <span
             key={ingredient.ingredient_id}
-            onClick={() => toggleIngredient(ingredient.nom)}
-            className={`m-1 px-4 py-2 rounded-full border transition-all duration-200 ${
-              selected.includes(ingredient.nom)
-                ? 'bg-green-500 text-white border-green-500'
-                : score > 10
-                ? 'bg-yellow-500'
-                : score > 5
-                ? 'bg-yellow-300'
-                : score > 0
-                ? 'bg-yellow-100'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
-            }`}
+            className="inline-flex items-center gap-1 m-1"
           >
-            {ingredient.nom}
-            {score > 0 && ` (${score})`}
-          </button>
+            <button
+              onClick={() => toggleIngredient(ingredient.nom)}
+              className={`px-4 py-2 rounded-full border transition-all duration-200 ${
+                selected.includes(ingredient.nom)
+                  ? 'bg-green-500 text-white border-green-500'
+                  : score > 10
+                  ? 'bg-yellow-500'
+                  : score > 5
+                  ? 'bg-yellow-300'
+                  : score > 0
+                  ? 'bg-yellow-100'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+              }`}
+            >
+              {ingredient.nom}
+              {score > 0 && ` (${score})`}
+            </button>
+            <Link
+              href={`/ingredients/${ingredient.ingredient_id}`}
+              className="text-xs text-gray-400 hover:text-gray-700"
+              title="Modifier les tags"
+            >
+              ✎
+            </Link>
+          </span>
         )
       })}
 
