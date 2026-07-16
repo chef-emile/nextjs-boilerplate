@@ -59,13 +59,9 @@ export default function RecetteDetail({
   const [editionLien, setEditionLien] = useState(false)
   const [lienTemp, setLienTemp] = useState(recette.lien_externe || '')
 
-  const [instructions, setInstructions] = useState(
-    recette.instructions || ''
-  )
+  const [instructions, setInstructions] = useState(recette.instructions || '')
   const [editionInstructions, setEditionInstructions] = useState(false)
-  const [instructionsTemp, setInstructionsTemp] = useState(
-    recette.instructions || ''
-  )
+  const [instructionsTemp, setInstructionsTemp] = useState(recette.instructions || '')
 
   const [recetteIngredients, setRecetteIngredients] = useState<RecetteIngredient[]>(recetteIngredientsInitial)
 
@@ -95,9 +91,7 @@ export default function RecetteDetail({
 
   const ingredientsDisponibles = ingredients
     .filter((i) => !idsAssocies.includes(i.ingredient_id))
-    .filter((i) =>
-      i.nom.toLowerCase().includes(recherche.toLowerCase())
-    )
+    .filter((i) => i.nom.toLowerCase().includes(recherche.toLowerCase()))
 
   const renommer = async () => {
     if (nomTemp.trim().length === 0) {
@@ -153,12 +147,8 @@ export default function RecetteDetail({
   }
 
   const handleTagsChange = async (nouvelleSelection: number[]) => {
-    const ajouts = nouvelleSelection.filter(
-      (id) => !tagsSelection.includes(id)
-    )
-    const suppressions = tagsSelection.filter(
-      (id) => !nouvelleSelection.includes(id)
-    )
+    const ajouts = nouvelleSelection.filter((id) => !tagsSelection.includes(id))
+    const suppressions = tagsSelection.filter((id) => !nouvelleSelection.includes(id))
 
     if (ajouts.length > 0) {
       const { error } = await supabase.from('recette_tags').insert(
@@ -190,9 +180,7 @@ export default function RecetteDetail({
   }
 
   const supprimerRecette = async () => {
-    const confirmation = confirm(
-      `Supprimer définitivement la recette "${nom}" ?`
-    )
+    const confirmation = confirm(`Supprimer définitivement la recette "${nom}" ?`)
     if (!confirmation) return
 
     const { error: errorLignes } = await supabase
@@ -265,9 +253,7 @@ export default function RecetteDetail({
     }
 
     setRecetteIngredients(
-      recetteIngredients.filter(
-        (ri) => ri.ingredient_id !== ingredientId
-      )
+      recetteIngredients.filter((ri) => ri.ingredient_id !== ingredientId)
     )
   }
 
@@ -487,9 +473,7 @@ export default function RecetteDetail({
                   {ingredient.obligatoire ? 'Obligatoire' : 'Optionnel'}
                 </button>
                 <button
-                  onClick={() =>
-                    supprimerIngredient(ingredient.ingredient_id)
-                  }
+                  onClick={() => supprimerIngredient(ingredient.ingredient_id)}
                   className="text-red-600"
                 >
                   Retirer
