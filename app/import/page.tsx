@@ -1,0 +1,17 @@
+'use client'
+
+import ImportIngredients from './ImportIngredients'
+import ImportRecettes from './ImportRecettes'
+
+export default function ImportPage() {
+  return (
+    <main className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Import en masse</h1>
+
+      <div className="flex flex-col gap-6 max-w-2xl">
+        <ImportIngredients />
+        <ImportRecettes />
+      </div>
+    </main>
+  )
+}
