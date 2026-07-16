@@ -374,7 +374,7 @@ export default function RecetteDetail({
         ) : (
           <div className="flex gap-3 items-center">
             {lienExterne ? (
-              
+              <a
                 href={lienExterne}
                 target="_blank"
                 rel="noopener noreferrer"
