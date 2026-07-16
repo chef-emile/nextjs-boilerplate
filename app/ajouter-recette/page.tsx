@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import TagSelector from '@/app/components/TagSelector'
 import { trouverElementsProches } from '@/lib/similarite'
@@ -10,50 +11,56 @@ type Tag = {
   portee: string
 }
 
-type IngredientExistant = {
-  ingredient_id: number
-  nom: string
-}
-
-export default function AjouterIngredient() {
+export default function AjouterRecette() {
+  const router = useRouter()
   const [nom, setNom] = useState('')
+  const [lienExterne, setLienExterne] = useState('')
+  const [instructions, setInstructions] = useState('')
+  const [ingredients, setIngredients] = useState<any[]>([])
+  const [selection, setSelection] = useState<number[]>([])
+  const [recherche, setRecherche] = useState('')
   const [message, setMessage] = useState('')
-
-  const [ingredientsExistants, setIngredientsExistants] = useState
-    IngredientExistant[]
-  >([])
+  const [recettes, setRecettes] = useState<any[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [tagsSelection, setTagsSelection] = useState<number[]>([])
 
   useEffect(() => {
-    const charger = async () => {
-      const { data: ingredientsData } = await supabase
+    const chargerIngredients = async () => {
+      const { data } = await supabase
         .from('ingredients')
-        .select('ingredient_id, nom')
+        .select('*')
         .order('nom')
-      setIngredientsExistants(ingredientsData || [])
+      setIngredients(data || [])
+
+      const { data: recettesData } = await supabase
+        .from('recettes')
+        .select('*')
+        .order('nom')
+      setRecettes(recettesData || [])
 
       const { data: tagsData } = await supabase
         .from('tags')
         .select('*')
-        .eq('portee', 'ingredient')
+        .eq('portee', 'recette')
         .order('nom')
       setTags(tagsData || [])
     }
-    charger()
+    chargerIngredients()
   }, [])
 
-  const ingredientsProches = trouverElementsProches(
-    nom,
-    ingredientsExistants,
-    (i) => i.nom
+  const ingredientsFiltres = ingredients.filter((ingredient) =>
+    ingredient.nom
+      .toLowerCase()
+      .includes(recherche.toLowerCase())
   )
 
-  const correspondanceExacte = ingredientsProches.find(
-    (i) => i.scoreSimilarite >= 0.9
+  const recettesProches = trouverElementsProches(nom, recettes, (r) => r.nom)
+
+  const correspondanceExacte = recettesProches.find(
+    (r) => r.scoreSimilarite >= 0.9
   )
 
-  const ajouterIngredient = async () => {
+  const enregistrer = async () => {
     if (nom.trim().length === 0) {
       setMessage('Le nom est obligatoire.')
       return
@@ -61,77 +68,85 @@ export default function AjouterIngredient() {
 
     if (correspondanceExacte) {
       const confirmation = confirm(
-        `Un ingrédient très proche existe déjà : "${correspondanceExacte.nom}". Ajouter quand même "${nom}" ?`
+        `Une recette très proche existe déjà : "${correspondanceExacte.nom}". Créer quand même "${nom}" ?`
       )
       if (!confirmation) return
     }
 
-    const { data, error } = await supabase
-      .from('ingredients')
+    const { data: recette, error } = await supabase
+      .from('recettes')
       .insert({
         nom,
+        lien_externe: lienExterne.trim() || null,
+        instructions: instructions.trim() || null,
       })
       .select()
       .single()
 
     if (error) {
-      console.log(error)
-      setMessage(JSON.stringify(error))
+      setMessage(error.message)
       return
     }
 
-    if (tagsSelection.length > 0 && data) {
+    if (selection.length > 0) {
+      const { error: liaisonError } = await supabase
+        .from('recette_ingredients')
+        .insert(
+          selection.map((ingredientId) => ({
+            recette_id: recette.recette_id,
+            ingredient_id: ingredientId,
+            obligatoire: true,
+          }))
+        )
+      if (liaisonError) {
+        setMessage(liaisonError.message)
+        return
+      }
+    }
+
+    if (tagsSelection.length > 0) {
       const { error: tagError } = await supabase
-        .from('ingredient_tags')
+        .from('recette_tags')
         .insert(
           tagsSelection.map((tagId) => ({
-            ingredient_id: data.ingredient_id,
+            recette_id: recette.recette_id,
             tag_id: tagId,
           }))
         )
       if (tagError) {
         setMessage(
-          `Ingrédient ajouté, mais erreur sur les tags : ${tagError.message}`
+          `Recette créée, mais erreur sur les tags : ${tagError.message}`
         )
         return
       }
     }
 
-    setMessage('Ingrédient ajouté')
-    setNom('')
-    setTagsSelection([])
-    if (data) {
-      setIngredientsExistants([
-        ...ingredientsExistants,
-        { ingredient_id: data.ingredient_id, nom: data.nom },
-      ])
-    }
+    router.push(`/recettes/${recette.recette_id}`)
   }
 
   return (
     <main className="p-6">
       <h1 className="text-2xl font-bold mb-4">
-        Ajouter un ingrédient
+        Ajouter une recette
       </h1>
-
       <input
         value={nom}
         onChange={(e) => setNom(e.target.value)}
-        placeholder="Nom de l'ingrédient"
+        placeholder="Nom de la recette"
         className="border p-2 rounded mb-2 block w-full max-w-md"
       />
 
-      {ingredientsProches.length > 0 && (
+      {recettesProches.length > 0 && (
         <div className="border border-yellow-300 bg-yellow-50 rounded p-3 mb-4 max-w-md">
           <p className="text-sm font-semibold mb-1">
-            Ingrédients proches déjà existants :
+            Recettes proches déjà existantes :
           </p>
           <ul className="text-sm">
-            {ingredientsProches.map((i) => (
-              <li key={i.ingredient_id}>
-                {i.nom}{' '}
+            {recettesProches.map((r) => (
+              <li key={r.recette_id}>
+                {r.nom}{' '}
                 <span className="text-gray-500">
-                  ({Math.round(i.scoreSimilarite * 100)}%)
+                  ({Math.round(r.scoreSimilarite * 100)}%)
                 </span>
               </li>
             ))}
@@ -139,10 +154,25 @@ export default function AjouterIngredient() {
         </div>
       )}
 
+      <input
+        value={lienExterne}
+        onChange={(e) => setLienExterne(e.target.value)}
+        placeholder="Lien vers un site tiers (optionnel)"
+        className="border p-2 rounded mb-2 block w-full max-w-md"
+      />
+
+      <textarea
+        value={instructions}
+        onChange={(e) => setInstructions(e.target.value)}
+        placeholder="Instructions (optionnel)"
+        rows={5}
+        className="border p-2 rounded mb-4 block w-full max-w-md"
+      />
+
       <div className="mb-4 max-w-md">
-        <p className="font-semibold mb-2">Tags</p>
+        <p className="font-semibold mb-2">Tags de la recette</p>
         <TagSelector
-          portee="ingredient"
+          portee="recette"
           tagsDisponibles={tags}
           selection={tagsSelection}
           onChange={setTagsSelection}
@@ -150,11 +180,49 @@ export default function AjouterIngredient() {
         />
       </div>
 
+      <input
+        value={recherche}
+        onChange={(e) => setRecherche(e.target.value)}
+        placeholder="Rechercher un ingrédient..."
+        className="border p-2 rounded mb-4 block w-full"
+      />
+      <div className="max-h-96 overflow-auto">
+        {ingredientsFiltres.map((ingredient) => (
+          <label
+            key={ingredient.ingredient_id}
+            className="block"
+          >
+            <input
+              type="checkbox"
+              checked={selection.includes(
+                ingredient.ingredient_id
+              )}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelection([
+                    ...selection,
+                    ingredient.ingredient_id,
+                  ])
+                } else {
+                  setSelection(
+                    selection.filter(
+                      (id) =>
+                        id !== ingredient.ingredient_id
+                    )
+                  )
+                }
+              }}
+            />
+            {' '}
+            {ingredient.nom}
+          </label>
+        ))}
+      </div>
       <button
-        onClick={ajouterIngredient}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
+        onClick={enregistrer}
+        className="bg-green-500 text-white px-4 py-2 rounded mt-4"
       >
-        Ajouter
+        Enregistrer la recette
       </button>
       <p className="mt-4">{message}</p>
     </main>
