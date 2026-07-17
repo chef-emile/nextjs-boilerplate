@@ -125,106 +125,26 @@ export default function AjouterRecette() {
   }
 
   return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold mb-4">
-        Ajouter une recette
-      </h1>
-      <input
-        value={nom}
-        onChange={(e) => setNom(e.target.value)}
-        placeholder="Nom de la recette"
-        className="border p-2 rounded mb-2 block w-full max-w-md"
-      />
+    <main className="min-h-screen bg-fond text-texte px-6 py-10 md:px-10">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="font-serif italic text-4xl md:text-5xl text-texte mb-8">
+          Ajouter une recette
+        </h1>
 
-      {recettesProches.length > 0 && (
-        <div className="border border-yellow-300 bg-yellow-50 rounded p-3 mb-4 max-w-md">
-          <p className="text-sm font-semibold mb-1">
-            Recettes proches déjà existantes :
-          </p>
-          <ul className="text-sm">
-            {recettesProches.map((r) => (
-              <li key={r.recette_id}>
-                {r.nom}{' '}
-                <span className="text-gray-500">
-                  ({Math.round(r.scoreSimilarite * 100)}%)
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <input
-        value={lienExterne}
-        onChange={(e) => setLienExterne(e.target.value)}
-        placeholder="Lien vers un site tiers (optionnel)"
-        className="border p-2 rounded mb-2 block w-full max-w-md"
-      />
-
-      <textarea
-        value={instructions}
-        onChange={(e) => setInstructions(e.target.value)}
-        placeholder="Instructions (optionnel)"
-        rows={5}
-        className="border p-2 rounded mb-4 block w-full max-w-md"
-      />
-
-      <div className="mb-4 max-w-md">
-        <p className="font-semibold mb-2">Tags de la recette</p>
-        <TagSelector
-          portee="recette"
-          tagsDisponibles={tags}
-          selection={tagsSelection}
-          onChange={setTagsSelection}
-          onTagCree={(tag) => setTags([...tags, tag])}
+        <input
+          value={nom}
+          onChange={(e) => setNom(e.target.value)}
+          placeholder="Nom de la recette"
+          className="bg-surface border border-ligne rounded-lg px-3 py-2 font-sans text-sm text-texte mb-2 block w-full focus:outline-none focus:border-or"
         />
-      </div>
 
-      <input
-        value={recherche}
-        onChange={(e) => setRecherche(e.target.value)}
-        placeholder="Rechercher un ingrédient..."
-        className="border p-2 rounded mb-4 block w-full"
-      />
-      <div className="max-h-96 overflow-auto">
-        {ingredientsFiltres.map((ingredient) => (
-          <label
-            key={ingredient.ingredient_id}
-            className="block"
-          >
-            <input
-              type="checkbox"
-              checked={selection.includes(
-                ingredient.ingredient_id
-              )}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setSelection([
-                    ...selection,
-                    ingredient.ingredient_id,
-                  ])
-                } else {
-                  setSelection(
-                    selection.filter(
-                      (id) =>
-                        id !== ingredient.ingredient_id
-                    )
-                  )
-                }
-              }}
-            />
-            {' '}
-            {ingredient.nom}
-          </label>
-        ))}
-      </div>
-      <button
-        onClick={enregistrer}
-        className="bg-green-500 text-white px-4 py-2 rounded mt-4"
-      >
-        Enregistrer la recette
-      </button>
-      <p className="mt-4">{message}</p>
-    </main>
-  )
-}
+        {recettesProches.length > 0 && (
+          <div className="border border-or bg-surface-2 rounded-lg p-3 mb-4">
+            <p className="font-mono text-xs uppercase tracking-wide text-or mb-2">
+              Recettes proches déjà existantes
+            </p>
+            <ul className="font-sans text-sm text-texte space-y-1">
+              {recettesProches.map((r) => (
+                <li key={r.recette_id}>
+                  {r.nom}{' '}
+                  <span className="font-mono
