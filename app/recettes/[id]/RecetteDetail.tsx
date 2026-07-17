@@ -282,250 +282,284 @@ export default function RecetteDetail({
   }
 
   return (
-    <main className="p-6">
-      <Link href="/" className="text-blue-500 underline">
-        ← Retour aux recettes
-      </Link>
+    <main className="min-h-screen bg-fond text-texte px-6 py-10 md:px-10">
+      <div className="max-w-2xl mx-auto">
+        <Link
+          href="/"
+          className="font-mono text-xs uppercase tracking-wide text-texte-muted hover:text-or transition-colors"
+        >
+          ← Retour aux recettes
+        </Link>
 
-      <div className="mt-4 mb-4">
-        {editionNom ? (
-          <div className="flex gap-2 items-center">
-            <input
-              value={nomTemp}
-              onChange={(e) => setNomTemp(e.target.value)}
-              className="border p-2 rounded text-2xl font-bold flex-1"
-            />
-            <button
-              onClick={renommer}
-              className="bg-green-500 text-white px-4 py-2 rounded"
-            >
-              Enregistrer
-            </button>
-            <button
-              onClick={() => {
-                setNomTemp(nom)
-                setEditionNom(false)
-              }}
-              className="bg-gray-300 px-4 py-2 rounded"
-            >
-              Annuler
-            </button>
-          </div>
-        ) : (
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">{nom}</h1>
-            <div className="flex gap-2">
+        <div className="mt-4 mb-6">
+          {editionNom ? (
+            <div className="flex gap-2 items-center">
+              <input
+                value={nomTemp}
+                onChange={(e) => setNomTemp(e.target.value)}
+                className="bg-surface border border-ligne rounded-lg px-3 py-2 font-serif italic text-2xl text-texte flex-1 focus:outline-none focus:border-or"
+                autoFocus
+              />
               <button
-                onClick={() => setEditionNom(true)}
-                className="bg-blue-500 text-white px-4 py-2 rounded"
-              >
-                Renommer
-              </button>
-              <button
-                onClick={supprimerRecette}
-                className="bg-red-500 text-white px-4 py-2 rounded"
-              >
-                Supprimer la recette
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {message && <p className="text-red-600 mb-4">{message}</p>}
-
-      <div className="mb-4 max-w-md">
-        <p className="font-semibold mb-2">Tags</p>
-        <TagSelector
-          portee="recette"
-          tagsDisponibles={tags}
-          selection={tagsSelection}
-          onChange={handleTagsChange}
-          onTagCree={(tag) => setTags([...tags, tag])}
-        />
-      </div>
-
-      <div className="mb-4 max-w-md">
-        <p className="font-semibold mb-2">Lien vers un site tiers</p>
-        {editionLien ? (
-          <div className="flex gap-2 items-center">
-            <input
-              value={lienTemp}
-              onChange={(e) => setLienTemp(e.target.value)}
-              placeholder="https://..."
-              className="border p-2 rounded flex-1"
-            />
-            <button
-              onClick={enregistrerLien}
-              className="bg-green-500 text-white px-3 py-2 rounded text-sm"
-            >
-              Enregistrer
-            </button>
-            <button
-              onClick={() => {
-                setLienTemp(lienExterne)
-                setEditionLien(false)
-              }}
-              className="bg-gray-300 px-3 py-2 rounded text-sm"
-            >
-              Annuler
-            </button>
-          </div>
-        ) : (
-          <div className="flex gap-3 items-center">
-            {lienExterne ? (
-              <a
-                href={lienExterne}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline break-all"
-              >
-                {lienExterne}
-              </a>
-            ) : (
-              <span className="text-gray-400">Aucun lien</span>
-            )}
-            <button
-              onClick={() => setEditionLien(true)}
-              className="text-sm text-gray-500 hover:text-gray-800"
-            >
-              Modifier
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="mb-6 max-w-md">
-        <p className="font-semibold mb-2">Instructions</p>
-        {editionInstructions ? (
-          <div>
-            <textarea
-              value={instructionsTemp}
-              onChange={(e) => setInstructionsTemp(e.target.value)}
-              rows={6}
-              className="border p-2 rounded w-full mb-2"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={enregistrerInstructions}
-                className="bg-green-500 text-white px-3 py-2 rounded text-sm"
+                onClick={renommer}
+                className="bg-emeraude text-fond px-4 py-2 rounded-lg font-sans text-sm hover:opacity-90 transition-opacity"
               >
                 Enregistrer
               </button>
               <button
                 onClick={() => {
-                  setInstructionsTemp(instructions)
-                  setEditionInstructions(false)
+                  setNomTemp(nom)
+                  setEditionNom(false)
                 }}
-                className="bg-gray-300 px-3 py-2 rounded text-sm"
+                className="bg-surface-2 text-texte-muted px-4 py-2 rounded-lg font-sans text-sm hover:text-texte transition-colors"
               >
                 Annuler
               </button>
             </div>
-          </div>
-        ) : (
-          <div>
-            {instructions ? (
-              <p className="whitespace-pre-wrap text-gray-800 mb-2">
-                {instructions}
-              </p>
-            ) : (
-              <p className="text-gray-400 mb-2">Aucune instruction.</p>
-            )}
-            <button
-              onClick={() => setEditionInstructions(true)}
-              className="text-sm text-gray-500 hover:text-gray-800"
-            >
-              Modifier
-            </button>
-          </div>
-        )}
-      </div>
-
-      <h2 className="text-xl font-bold mb-2">
-        Ingrédients ({ingredientsAssocies.length})
-      </h2>
-
-      {ingredientsAssocies.length === 0 ? (
-        <p className="mb-6">Aucun ingrédient pour cette recette.</p>
-      ) : (
-        <div className="mb-6">
-          {ingredientsAssocies.map((ingredient) => (
-            <div
-              key={ingredient.ingredient_id}
-              className="flex justify-between items-center border-b py-2"
-            >
-              <span>{ingredient.nom}</span>
-              <div className="flex gap-2 items-center">
+          ) : (
+            <div className="flex justify-between items-start gap-4">
+              <h1 className="font-serif italic text-4xl md:text-5xl text-texte">
+                {nom}
+              </h1>
+              <div className="flex gap-2 shrink-0">
                 <button
-                  onClick={() =>
-                    toggleObligatoire(
-                      ingredient.ingredient_id,
-                      ingredient.obligatoire
-                    )
-                  }
-                  className={`text-sm px-2 py-1 rounded ${
-                    ingredient.obligatoire
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'bg-gray-100 text-gray-600'
-                  }`}
+                  onClick={() => setEditionNom(true)}
+                  className="font-mono text-xs uppercase tracking-wide border border-ligne text-texte-muted px-3 py-2 rounded-lg hover:border-or hover:text-or transition-colors"
                 >
-                  {ingredient.obligatoire ? 'Obligatoire' : 'Optionnel'}
+                  Renommer
                 </button>
                 <button
-                  onClick={() => supprimerIngredient(ingredient.ingredient_id)}
-                  className="text-red-600"
+                  onClick={supprimerRecette}
+                  className="font-mono text-xs uppercase tracking-wide border border-corail text-corail px-3 py-2 rounded-lg hover:bg-corail hover:text-fond transition-colors"
                 >
-                  Retirer
+                  Supprimer
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-
-      <h2 className="text-xl font-bold mb-2">Ajouter un ingrédient</h2>
-
-      <div className="flex gap-4 items-center mb-2">
-        <input
-          value={recherche}
-          onChange={(e) => setRecherche(e.target.value)}
-          placeholder="Rechercher un ingrédient..."
-          className="border p-2 rounded flex-1"
-        />
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={obligatoireNouveau}
-            onChange={(e) => setObligatoireNouveau(e.target.checked)}
-          />
-          Obligatoire
-        </label>
-      </div>
-
-      {recherche.length > 0 && (
-        <div className="max-h-64 overflow-auto border rounded">
-          {ingredientsDisponibles.map((ingredient) => (
-            <div
-              key={ingredient.ingredient_id}
-              className="flex justify-between items-center px-3 py-2 border-b"
-            >
-              <span>{ingredient.nom}</span>
-              <button
-                onClick={() => ajouterIngredient(ingredient)}
-                className="bg-blue-500 text-white px-3 py-1 rounded"
-              >
-                Ajouter
-              </button>
-            </div>
-          ))}
-          {ingredientsDisponibles.length === 0 && (
-            <p className="px-3 py-2 text-gray-500">
-              Aucun ingrédient trouvé.
-            </p>
           )}
         </div>
-      )}
+
+        {message && (
+          <p className="font-sans text-sm text-corail mb-4">{message}</p>
+        )}
+
+        <div className="mb-6">
+          <p className="font-mono text-xs uppercase tracking-wide text-texte-muted mb-2">
+            Tags
+          </p>
+          <TagSelector
+            portee="recette"
+            tagsDisponibles={tags}
+            selection={tagsSelection}
+            onChange={handleTagsChange}
+            onTagCree={(tag) => setTags([...tags, tag])}
+          />
+        </div>
+
+        <div className="mb-6">
+          <p className="font-mono text-xs uppercase tracking-wide text-texte-muted mb-2">
+            Lien vers un site tiers
+          </p>
+          {editionLien ? (
+            <div className="flex gap-2 items-center">
+              <input
+                value={lienTemp}
+                onChange={(e) => setLienTemp(e.target.value)}
+                placeholder="https://..."
+                className="bg-surface border border-ligne rounded-lg px-3 py-2 font-sans text-sm text-texte flex-1 focus:outline-none focus:border-or"
+                autoFocus
+              />
+              <button
+                onClick={enregistrerLien}
+                className="bg-emeraude text-fond px-3 py-2 rounded-lg font-sans text-sm hover:opacity-90 transition-opacity"
+              >
+                Enregistrer
+              </button>
+              <button
+                onClick={() => {
+                  setLienTemp(lienExterne)
+                  setEditionLien(false)
+                }}
+                className="bg-surface-2 text-texte-muted px-3 py-2 rounded-lg font-sans text-sm hover:text-texte transition-colors"
+              >
+                Annuler
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-3 items-center flex-wrap">
+              {lienExterne ? (
+                
+                  href={lienExterne}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-sans text-sm text-emeraude hover:underline break-all"
+                >
+                  {lienExterne}
+                </a>
+              ) : (
+                <span className="font-sans text-sm text-texte-muted">
+                  Aucun lien
+                </span>
+              )}
+              <button
+                onClick={() => setEditionLien(true)}
+                className="font-mono text-xs text-texte-muted hover:text-or transition-colors"
+              >
+                Modifier
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="mb-8">
+          <p className="font-mono text-xs uppercase tracking-wide text-texte-muted mb-2">
+            Instructions
+          </p>
+          {editionInstructions ? (
+            <div>
+              <textarea
+                value={instructionsTemp}
+                onChange={(e) => setInstructionsTemp(e.target.value)}
+                rows={6}
+                className="bg-surface border border-ligne rounded-lg px-3 py-2 font-sans text-sm text-texte w-full mb-2 focus:outline-none focus:border-or"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={enregistrerInstructions}
+                  className="bg-emeraude text-fond px-3 py-2 rounded-lg font-sans text-sm hover:opacity-90 transition-opacity"
+                >
+                  Enregistrer
+                </button>
+                <button
+                  onClick={() => {
+                    setInstructionsTemp(instructions)
+                    setEditionInstructions(false)
+                  }}
+                  className="bg-surface-2 text-texte-muted px-3 py-2 rounded-lg font-sans text-sm hover:text-texte transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              {instructions ? (
+                <p className="whitespace-pre-wrap font-sans text-sm text-texte mb-2 leading-relaxed">
+                  {instructions}
+                </p>
+              ) : (
+                <p className="font-sans text-sm text-texte-muted mb-2">
+                  Aucune instruction.
+                </p>
+              )}
+              <button
+                onClick={() => setEditionInstructions(true)}
+                className="font-mono text-xs text-texte-muted hover:text-or transition-colors"
+              >
+                Modifier
+              </button>
+            </div>
+          )}
+        </div>
+
+        <h2 className="font-serif italic text-2xl text-texte mb-3">
+          Ingrédients
+          <span className="font-mono not-italic text-sm text-texte-muted ml-2">
+            ({ingredientsAssocies.length})
+          </span>
+        </h2>
+
+        {ingredientsAssocies.length === 0 ? (
+          <p className="font-sans text-sm text-texte-muted mb-8">
+            Aucun ingrédient pour cette recette.
+          </p>
+        ) : (
+          <div className="mb-8 bg-surface border border-ligne rounded-lg divide-y divide-ligne">
+            {ingredientsAssocies.map((ingredient) => (
+              <div
+                key={ingredient.ingredient_id}
+                className="flex justify-between items-center px-4 py-3"
+              >
+                <span className="font-sans text-sm text-texte">
+                  {ingredient.nom}
+                </span>
+                <div className="flex gap-3 items-center">
+                  <button
+                    onClick={() =>
+                      toggleObligatoire(
+                        ingredient.ingredient_id,
+                        ingredient.obligatoire
+                      )
+                    }
+                    className={`font-mono text-xs uppercase tracking-wide px-2 py-1 rounded-full border transition-colors ${
+                      ingredient.obligatoire
+                        ? 'border-or text-or'
+                        : 'border-ligne text-texte-muted'
+                    }`}
+                  >
+                    {ingredient.obligatoire ? 'Obligatoire' : 'Optionnel'}
+                  </button>
+                  <button
+                    onClick={() => supprimerIngredient(ingredient.ingredient_id)}
+                    className="font-mono text-xs text-corail hover:underline"
+                  >
+                    Retirer
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <h2 className="font-serif italic text-2xl text-texte mb-3">
+          Ajouter un ingrédient
+        </h2>
+
+        <div className="flex gap-4 items-center mb-2 flex-wrap">
+          <input
+            value={recherche}
+            onChange={(e) => setRecherche(e.target.value)}
+            placeholder="Rechercher un ingrédient..."
+            className="bg-surface border border-ligne rounded-lg px-3 py-2 font-sans text-sm text-texte flex-1 min-w-[200px] focus:outline-none focus:border-or"
+          />
+          <label className="flex items-center gap-2 font-sans text-sm text-texte-muted">
+            <input
+              type="checkbox"
+              checked={obligatoireNouveau}
+              onChange={(e) => setObligatoireNouveau(e.target.checked)}
+              className="accent-or"
+            />
+            Obligatoire
+          </label>
+        </div>
+
+        {recherche.length > 0 && (
+          <div className="max-h-64 overflow-auto bg-surface border border-ligne rounded-lg divide-y divide-ligne">
+            {ingredientsDisponibles.map((ingredient) => (
+              <div
+                key={ingredient.ingredient_id}
+                className="flex justify-between items-center px-4 py-2"
+              >
+                <span className="font-sans text-sm text-texte">
+                  {ingredient.nom}
+                </span>
+                <button
+                  onClick={() => ajouterIngredient(ingredient)}
+                  className="bg-or text-fond px-3 py-1 rounded-full font-sans text-sm hover:opacity-90 transition-opacity"
+                >
+                  Ajouter
+                </button>
+              </div>
+            ))}
+            {ingredientsDisponibles.length === 0 && (
+              <p className="px-4 py-3 font-sans text-sm text-texte-muted">
+                Aucun ingrédient trouvé.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
     </main>
   )
 }
