@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { couleurTag } from '@/lib/tagColor'
 
 type Ingredient = {
   ingredient_id: number
@@ -35,14 +36,6 @@ type Position = { x: number; y: number }
 
 const PALETTE_TAGS = ['#F0B429', '#17A673', '#E85D4A', '#4A8FC2', '#A876B8']
 
-function couleurDepuisNom(nom: string) {
-  let hash = 0
-  for (let i = 0; i < nom.length; i++) {
-    hash = nom.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  const index = Math.abs(hash) % PALETTE_TAGS.length
-  return PALETTE_TAGS[index]
-}
 
 const CENTRE: Position = { x: 400, y: 380 }
 const RAYON_BASE = 250
@@ -309,7 +302,7 @@ export default function IngredientsSelector({
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => {
               const actif = tagsFiltre.includes(tag.tag_id)
-              const couleur = couleurDepuisNom(tag.nom)
+              const couleur = couleurTag(tag.nom)
               return (
                 <button
                   key={tag.tag_id}
@@ -321,10 +314,10 @@ export default function IngredientsSelector({
                     color: actif ? '#17140F' : couleur,
                   }}
                 >
-                  {tag.nom}
-                </button>
-              )
-            })}
+      {tag.nom}
+    </button>
+  )
+})}
           </div>
         </div>
       )}
