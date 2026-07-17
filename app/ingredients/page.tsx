@@ -1,6 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import IngredientsSelector from "@/app/components/IngredientsSelector";
+
 export const dynamic = 'force-dynamic'
+
 export default async function IngredientsPage() {
   const { data: ingredients } = await supabase
     .from("ingredients")
@@ -20,10 +22,17 @@ export default async function IngredientsPage() {
   const { data: ingredientTags } = await supabase
     .from("ingredient_tags")
     .select("*");
+
   return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold mb-2">Ingrédients</h1>
-      <p className="mb-4">{ingredients?.length} ingrédients</p>
+    <main className="min-h-screen bg-fond text-texte px-6 py-10 md:px-10">
+      <div className="mb-8">
+        <h1 className="font-serif italic text-4xl md:text-5xl text-texte">
+          Ingrédients
+        </h1>
+        <p className="font-mono text-sm text-texte-muted mt-2">
+          {ingredients?.length ?? 0} ingrédients référencés
+        </p>
+      </div>
       <IngredientsSelector
         ingredients={ingredients || []}
         recettes={recettes || []}
