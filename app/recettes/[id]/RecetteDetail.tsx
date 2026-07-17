@@ -356,7 +356,7 @@ export default function RecetteDetail({
           />
         </div>
 
-        <div className="mb-6">
+       <div className="mb-6">
           <p className="font-mono text-xs uppercase tracking-wide text-texte-muted mb-2">
             Lien vers un site tiers
           </p>
@@ -388,12 +388,7 @@ export default function RecetteDetail({
           ) : (
             <div className="flex gap-3 items-center flex-wrap">
               {lienExterne ? (
-                
-                  href={lienExterne}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-sans text-sm text-emeraude hover:underline break-all"
-                >
+                <a href={lienExterne} target="_blank" rel="noopener noreferrer" className="font-sans text-sm text-emeraude hover:underline break-all">
                   {lienExterne}
                 </a>
               ) : (
