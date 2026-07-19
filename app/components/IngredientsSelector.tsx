@@ -704,7 +704,7 @@ export default function IngredientsSelector({
       {!modeGestion && (
         <div className="mt-8 p-4 bg-surface border border-ligne rounded-lg">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="font-serif italic text-xl text-texte">
+            <h2 className="font-display italic text-xl text-texte">
               Ingrédients sélectionnés
             </h2>
             {selected.length > 0 && (
@@ -739,7 +739,7 @@ export default function IngredientsSelector({
 
       {!modeGestion && (
         <div className="mt-6">
-          <h2 className="font-serif italic text-xl text-texte mb-3">
+          <h2 className="font-display italic text-xl text-texte mb-3">
             Recettes compatibles
           </h2>
 
@@ -768,7 +768,7 @@ export default function IngredientsSelector({
                 <p className="font-mono text-xs text-texte-muted uppercase tracking-wide">
                   Recette sélectionnée
                 </p>
-                <p className="font-serif italic text-lg text-texte">
+                <p className="font-display italic text-lg text-texte">
                   {recetteSelectionnee.nom}
                 </p>
               </div>
@@ -818,7 +818,7 @@ export default function IngredientsSelector({
       {modale === 'suppression' && (
         <div className="fixed inset-0 bg-fond/80 flex items-center justify-center z-50 px-4">
           <div className="bg-surface border border-ligne rounded-lg max-w-lg w-full p-6">
-            <h3 className="font-serif italic text-2xl text-texte mb-3">
+            <h3 className="font-display italic text-2xl text-texte mb-3">
               Supprimer {selectionGestion.length} ingrédient(s) ?
             </h3>
 
@@ -879,7 +879,7 @@ export default function IngredientsSelector({
       {modale === 'fusion' && selectionGestion.length === 2 && (
         <div className="fixed inset-0 bg-fond/80 flex items-center justify-center z-50 px-4">
           <div className="bg-surface border border-ligne rounded-lg max-w-lg w-full p-6">
-            <h3 className="font-serif italic text-2xl text-texte mb-2">
+            <h3 className="font-display italic text-2xl text-texte mb-2">
               Fusionner deux ingrédients
             </h3>
             <p className="font-sans text-sm text-texte-muted mb-4">
