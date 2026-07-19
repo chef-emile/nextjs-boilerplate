@@ -17,6 +17,7 @@ type Recette = {
   nom: string
   lien_externe?: string | null
   instructions?: string | null
+  photo_url?: string | null
 }
 
 type RecetteIngredient = {
