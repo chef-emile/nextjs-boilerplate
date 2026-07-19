@@ -1,20 +1,18 @@
 import type { Metadata } from "next";
-import { Instrument_Serif, Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { Fraunces, Manrope, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
-const instrumentSerif = Instrument_Serif({
+const fraunces = Fraunces({
   subsets: ["latin"],
-  weight: "400",
+  weight: "500",
   style: ["normal", "italic"],
-  variable: "--font-instrument-serif",
+  variable: "--font-fraunces",
 });
-
-const spaceGrotesk = Space_Grotesk({
+const manrope = Manrope({
   subsets: ["latin"],
   weight: ["400", "500", "700"],
-  variable: "--font-space-grotesk",
+  variable: "--font-manrope",
 });
-
 const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
@@ -34,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body
-        className={`${instrumentSerif.variable} ${spaceGrotesk.variable} ${plexMono.variable} antialiased`}
+        className={`${fraunces.variable} ${manrope.variable} ${plexMono.variable} antialiased`}
       >
         {children}
       </body>
