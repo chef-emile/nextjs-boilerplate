@@ -351,7 +351,7 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
               <input
                 value={nomTemp}
                 onChange={(e) => setNomTemp(e.target.value)}
-                className="bg-surface border border-ligne rounded-lg px-3 py-2 font-serif italic text-2xl text-texte flex-1 focus:outline-none focus:border-or"
+                className="bg-surface border border-ligne rounded-lg px-3 py-2 font-display italic text-2xl text-texte flex-1 focus:outline-none focus:border-or"
                 autoFocus
               />
               <button
@@ -372,7 +372,7 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
             </div>
           ) : (
             <div className="flex justify-between items-start gap-4">
-              <h1 className="font-serif italic text-4xl md:text-5xl text-texte">
+              <h1 className="font-display italic text-4xl md:text-5xl text-texte">
                 {nom}
               </h1>
               <div className="flex gap-2 shrink-0">
@@ -546,7 +546,7 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
           )}
         </div>
 
-        <h2 className="font-serif italic text-2xl text-texte mb-3">
+        <h2 className="font-display italic text-2xl text-texte mb-3">
           Ingrédients
           <span className="font-mono not-italic text-sm text-texte-muted ml-2">
             ({ingredientsAssocies.length})
@@ -595,7 +595,7 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
           </div>
         )}
 
-        <h2 className="font-serif italic text-2xl text-texte mb-3">
+        <h2 className="font-display italic text-2xl text-texte mb-3">
           Ajouter un ingrédient
         </h2>
 
