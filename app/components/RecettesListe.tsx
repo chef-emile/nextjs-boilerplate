@@ -7,6 +7,7 @@ import { couleurTag } from '@/lib/tagColor'
 type Recette = {
   recette_id: number
   nom: string
+  photo_url?: string | null
 }
 
 type Tag = {
@@ -103,8 +104,16 @@ export default function RecettesListe({
                 href={`/recettes/${recette.recette_id}`}
                 className="block rounded-xl overflow-hidden bg-surface hover:bg-surface-2 transition-colors"
               >
-                <div className="h-36 bg-surface-2 flex items-center justify-center">
-                  <i className="text-texte-muted text-2xl">🍽</i>
+                <div className="h-36 bg-surface-2 flex items-center justify-center overflow-hidden">
+                  {recette.photo_url ? (
+                    <img
+                      src={recette.photo_url}
+                      alt={recette.nom}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <i className="text-texte-muted text-2xl">🍽</i>
+                  )}
                 </div>
                 <div className="p-4">
                   <p className="font-display italic text-2xl text-texte mb-2">
