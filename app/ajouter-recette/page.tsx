@@ -138,7 +138,7 @@ export default function AjouterRecette() {
           className="bg-surface border border-ligne rounded-lg px-3 py-2 font-sans text-sm text-texte mb-2 block w-full focus:outline-none focus:border-or"
         />
 
-        {recettesProches.length > 0 && (
+       {recettesProches.length > 0 && (
           <div className="border border-or bg-surface-2 rounded-lg p-3 mb-4">
             <p className="font-mono text-xs uppercase tracking-wide text-or mb-2">
               Recettes proches déjà existantes
@@ -147,4 +147,11 @@ export default function AjouterRecette() {
               {recettesProches.map((r) => (
                 <li key={r.recette_id}>
                   {r.nom}{' '}
-                  <span className="font-mono
+                  <span className="font-mono text-texte-muted">
+                    ({Math.round(r.scoreSimilarite * 100)}%)
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
