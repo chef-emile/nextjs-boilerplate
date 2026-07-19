@@ -281,6 +281,59 @@ export default function RecetteDetail({
     )
   }
 
+const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
+  const [uploadEnCours, setUploadEnCours] = useState(false)
+
+  const uploaderPhoto = async (fichier: File) => {
+    setUploadEnCours(true)
+    setMessage('')
+
+    const extension = fichier.name.split('.').pop()
+    const cheminFichier = `${recette.recette_id}-${Date.now()}.${extension}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('photos-recettes')
+      .upload(cheminFichier, fichier, { upsert: true })
+
+    if (uploadError) {
+      setMessage(uploadError.message)
+      setUploadEnCours(false)
+      return
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('photos-recettes')
+      .getPublicUrl(cheminFichier)
+
+    const { error: updateError } = await supabase
+      .from('recettes')
+      .update({ photo_url: urlData.publicUrl })
+      .eq('recette_id', recette.recette_id)
+
+    if (updateError) {
+      setMessage(updateError.message)
+      setUploadEnCours(false)
+      return
+    }
+
+    setPhotoUrl(urlData.publicUrl)
+    setUploadEnCours(false)
+  }
+
+  const supprimerPhoto = async () => {
+    const { error } = await supabase
+      .from('recettes')
+      .update({ photo_url: null })
+      .eq('recette_id', recette.recette_id)
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    setPhotoUrl('')
+  }
+  
   return (
     <main className="min-h-screen bg-fond text-texte px-6 py-10 md:px-10">
       <div className="max-w-2xl mx-auto">
@@ -339,6 +392,40 @@ export default function RecetteDetail({
           )}
         </div>
 
+        <div className="mb-6">
+          {photoUrl ? (
+            <div className="relative group">
+              <img
+                src={photoUrl}
+                alt={nom}
+                className="w-full max-h-96 object-cover rounded-lg border border-ligne"
+              />
+              <button
+                onClick={supprimerPhoto}
+                className="absolute top-3 right-3 font-mono text-xs uppercase tracking-wide bg-fond/80 text-corail border border-corail px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                Retirer la photo
+              </button>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center border border-dashed border-ligne rounded-lg h-40 cursor-pointer hover:border-or transition-colors">
+              <span className="font-mono text-xs uppercase tracking-wide text-texte-muted">
+                {uploadEnCours ? 'Envoi en cours...' : '+ Ajouter une photo'}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploadEnCours}
+                onChange={(e) => {
+                  const fichier = e.target.files?.[0]
+                  if (fichier) uploaderPhoto(fichier)
+                }}
+              />
+            </label>
+          )}
+        </div>
+        
         {message && (
           <p className="font-sans text-sm text-corail mb-4">{message}</p>
         )}
