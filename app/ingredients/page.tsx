@@ -26,7 +26,7 @@ export default async function IngredientsPage() {
   return (
     <main className="min-h-screen bg-fond text-texte px-6 py-10 md:px-10">
       <div className="mb-8">
-        <h1 className="font-serif italic text-4xl md:text-5xl text-texte">
+        <h1 className="font-display italic text-4xl md:text-5xl text-texte">
           Ingrédients
         </h1>
         <p className="font-mono text-sm text-texte-muted mt-2">
