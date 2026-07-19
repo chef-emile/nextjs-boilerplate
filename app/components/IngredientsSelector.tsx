@@ -37,9 +37,6 @@ type Position = { x: number; y: number }
 
 type Modale = 'suppression' | 'fusion' | null
 
-const PALETTE_TAGS = ['#F0B429', '#17A673', '#E85D4A', '#4A8FC2', '#A876B8']
-
-
 const CENTRE: Position = { x: 400, y: 380 }
 const RAYON_BASE = 250
 const RAYON_PROCHE = 125
@@ -507,7 +504,7 @@ export default function IngredientsSelector({
         <div />
         <button
           onClick={basculerModeGestion}
-          className={`font-mono text-xs uppercase tracking-wide px-3 py-1.5 rounded-full border transition-colors ${
+          className={`font-mono text-xs uppercase tracking-wide px-3 py-1.5 rounded-[--radius-champ] border transition-colors ${
             modeGestion
               ? 'bg-corail text-fond border-corail'
               : 'text-texte-muted border-ligne hover:border-corail hover:text-corail'
@@ -530,17 +527,17 @@ export default function IngredientsSelector({
                 <button
                   key={tag.tag_id}
                   onClick={() => toggleTagFiltre(tag.tag_id)}
-                  className="px-3 py-1 rounded-full text-sm border transition-colors duration-200"
+                  className="px-3 py-1.5 rounded-[--radius-badge] text-xs font-medium transition-colors"
                   style={{
-                    borderColor: couleur,
                     backgroundColor: actif ? couleur : 'transparent',
-                    color: actif ? '#17140F' : couleur,
+                    color: actif ? '#17140F' : '#9C9284',
+                    border: `1px solid ${actif ? couleur : '#3A342A'}`,
                   }}
                 >
-      {tag.nom}
-    </button>
-  )
-})}
+                  {tag.nom}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
@@ -702,7 +699,7 @@ export default function IngredientsSelector({
       </div>
 
       {!modeGestion && (
-        <div className="mt-8 p-4 bg-surface border border-ligne rounded-lg">
+        <div className="mt-8 p-4 bg-surface border border-ligne rounded-[--radius-carte] shadow-[--shadow-carte]">
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-display italic text-xl text-texte">
               Ingrédients sélectionnés
@@ -727,7 +724,7 @@ export default function IngredientsSelector({
                 <button
                   key={nom}
                   onClick={() => toggleIngredient(nom)}
-                  className="bg-or text-fond px-3 py-1 rounded-full text-sm font-sans hover:opacity-80 transition-opacity"
+                  className="bg-or text-fond px-3 py-1.5 rounded-[--radius-badge] text-xs font-medium hover:opacity-80 transition-opacity"
                 >
                   {nom} ×
                 </button>
@@ -748,7 +745,7 @@ export default function IngredientsSelector({
               Aucune recette compatible pour l'instant.
             </p>
           ) : (
-            <div className="bg-surface border border-ligne rounded-lg divide-y divide-ligne">
+            <div className="bg-surface border border-ligne rounded-[--radius-carte] shadow-[--shadow-carte] divide-y divide-ligne overflow-hidden">
               {recettesCompatibles.map((recette) => (
                 <button
                   key={recette.id}
@@ -763,7 +760,7 @@ export default function IngredientsSelector({
           )}
 
           {recetteSelectionnee && (
-            <div className="mt-4 p-4 bg-surface-2 border border-or rounded-lg flex items-center justify-between">
+            <div className="mt-4 p-4 bg-surface-2 border border-or rounded-[--radius-carte] flex items-center justify-between">
               <div>
                 <p className="font-mono text-xs text-texte-muted uppercase tracking-wide">
                   Recette sélectionnée
@@ -801,13 +798,13 @@ export default function IngredientsSelector({
             <button
               onClick={ouvrirModaleFusion}
               disabled={selectionGestion.length !== 2}
-              className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full border border-emeraude text-emeraude hover:bg-emeraude hover:text-fond transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-emeraude"
+              className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-[--radius-champ] border border-emeraude text-emeraude hover:bg-emeraude hover:text-fond transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-emeraude"
             >
               Fusionner
             </button>
             <button
               onClick={ouvrirModaleSuppression}
-              className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full bg-corail text-fond hover:opacity-85 transition-opacity"
+              className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-[--radius-champ] bg-corail text-fond hover:opacity-85 transition-opacity"
             >
               Supprimer
             </button>
@@ -817,7 +814,7 @@ export default function IngredientsSelector({
 
       {modale === 'suppression' && (
         <div className="fixed inset-0 bg-fond/80 flex items-center justify-center z-50 px-4">
-          <div className="bg-surface border border-ligne rounded-lg max-w-lg w-full p-6">
+          <div className="bg-surface border border-ligne rounded-[--radius-carte] shadow-[--shadow-flottant] max-w-lg w-full p-6">
             <h3 className="font-display italic text-2xl text-texte mb-3">
               Supprimer {selectionGestion.length} ingrédient(s) ?
             </h3>
@@ -826,7 +823,7 @@ export default function IngredientsSelector({
               {ingredientsSelectionGestion.map((i) => (
                 <span
                   key={i.ingredient_id}
-                  className="font-sans text-sm px-3 py-1 rounded-full bg-surface-2 text-texte"
+                  className="font-sans text-xs font-medium px-3 py-1.5 rounded-[--radius-badge] bg-surface-2 text-texte"
                 >
                   {i.nom}
                 </span>
@@ -838,7 +835,7 @@ export default function IngredientsSelector({
                 <p className="font-sans text-sm text-corail mb-2">
                   {recettesImpacteesParSuppression.length} recette(s) utilisent ces ingrédients et perdront ce lien :
                 </p>
-                <div className="max-h-40 overflow-auto bg-surface-2 border border-ligne rounded p-3">
+                <div className="max-h-40 overflow-auto bg-surface-2 border border-ligne rounded-[--radius-champ] p-3">
                   {recettesImpacteesParSuppression.map((r) => (
                     <p key={r.recette_id} className="font-sans text-sm text-texte-muted">
                       {r.nom}
@@ -860,14 +857,14 @@ export default function IngredientsSelector({
               <button
                 onClick={fermerModale}
                 disabled={enCoursGestion}
-                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full border border-ligne text-texte-muted hover:text-texte transition-colors disabled:opacity-50"
+                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-[--radius-champ] border border-ligne text-texte-muted hover:text-texte transition-colors disabled:opacity-50"
               >
                 Annuler
               </button>
               <button
                 onClick={confirmerSuppression}
                 disabled={enCoursGestion}
-                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full bg-corail text-fond hover:opacity-85 transition-opacity disabled:opacity-50"
+                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-[--radius-champ] bg-corail text-fond hover:opacity-85 transition-opacity disabled:opacity-50"
               >
                 {enCoursGestion ? 'Suppression...' : 'Confirmer la suppression'}
               </button>
@@ -878,7 +875,7 @@ export default function IngredientsSelector({
 
       {modale === 'fusion' && selectionGestion.length === 2 && (
         <div className="fixed inset-0 bg-fond/80 flex items-center justify-center z-50 px-4">
-          <div className="bg-surface border border-ligne rounded-lg max-w-lg w-full p-6">
+          <div className="bg-surface border border-ligne rounded-[--radius-carte] shadow-[--shadow-flottant] max-w-lg w-full p-6">
             <h3 className="font-display italic text-2xl text-texte mb-2">
               Fusionner deux ingrédients
             </h3>
@@ -892,7 +889,7 @@ export default function IngredientsSelector({
                 return (
                   <label
                     key={id}
-                    className={`flex flex-col gap-1 p-3 rounded border cursor-pointer transition-colors ${
+                    className={`flex flex-col gap-1 p-3 rounded-[--radius-champ] border cursor-pointer transition-colors ${
                       ingredientCible === id
                         ? 'border-or bg-surface-2'
                         : 'border-ligne hover:border-texte-muted'
@@ -932,14 +929,14 @@ export default function IngredientsSelector({
               <button
                 onClick={fermerModale}
                 disabled={enCoursGestion}
-                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full border border-ligne text-texte-muted hover:text-texte transition-colors disabled:opacity-50"
+                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-[--radius-champ] border border-ligne text-texte-muted hover:text-texte transition-colors disabled:opacity-50"
               >
                 Annuler
               </button>
               <button
                 onClick={confirmerFusion}
                 disabled={enCoursGestion || !ingredientCible}
-                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full bg-emeraude text-fond hover:opacity-85 transition-opacity disabled:opacity-50"
+                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-[--radius-champ] bg-emeraude text-fond hover:opacity-85 transition-opacity disabled:opacity-50"
               >
                 {enCoursGestion ? 'Fusion...' : 'Confirmer la fusion'}
               </button>
