@@ -111,7 +111,7 @@ export default function AjouterRecette() {
   return (
     <main className="min-h-screen bg-fond text-texte px-6 py-10 md:px-10">
       <div className="max-w-2xl mx-auto">
-        <h1 className="font-serif italic text-4xl md:text-5xl text-texte mb-8">
+        <h1 className="font-display italic text-4xl md:text-5xl text-texte mb-8">
           Ajouter une recette
         </h1>
 
