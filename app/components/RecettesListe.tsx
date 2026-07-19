@@ -73,17 +73,13 @@ export default function RecettesListe({
                 <button
                   key={tag.tag_id}
                   onClick={() => toggleTag(tag.tag_id)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs border transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-[--radius-badge] text-xs font-medium transition-colors"
                   style={{
-                    borderColor: actif ? couleur : '#3A342A',
-                    color: actif ? couleur : '#9C9284',
-                    backgroundColor: actif ? `${couleur}1A` : 'transparent',
+                    backgroundColor: actif ? couleur : 'transparent',
+                    color: actif ? '#17140F' : '#9C9284',
+                    border: `1px solid ${actif ? couleur : '#3A342A'}`,
                   }}
                 >
-                  <span
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: couleur }}
-                  />
                   {tag.nom}
                 </button>
               )
@@ -102,7 +98,7 @@ export default function RecettesListe({
               <Link
                 key={recette.recette_id}
                 href={`/recettes/${recette.recette_id}`}
-                className="block rounded-xl overflow-hidden bg-surface hover:bg-surface-2 transition-colors"
+                className="block rounded-[--radius-carte] shadow-[--shadow-carte] overflow-hidden bg-surface hover:bg-surface-2 border border-ligne transition-colors"
               >
                 <div className="h-36 bg-surface-2 flex items-center justify-center overflow-hidden">
                   {recette.photo_url ? (
@@ -120,18 +116,18 @@ export default function RecettesListe({
                     {recette.nom}
                   </p>
                   {tagsRecette.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5">
                       {tagsRecette.map((tag) => {
                         const couleur = couleurTag(tag.nom)
                         return (
                           <span
                             key={tag.tag_id}
-                            className="flex items-center gap-1.5 text-xs text-texte-muted"
+                            className="text-xs font-medium px-2 py-0.5 rounded-[--radius-badge]"
+                            style={{
+                              backgroundColor: couleur,
+                              color: '#17140F',
+                            }}
                           >
-                            <span
-                              className="w-1.5 h-1.5 rounded-full"
-                              style={{ backgroundColor: couleur }}
-                            />
                             {tag.nom}
                           </span>
                         )
