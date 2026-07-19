@@ -64,6 +64,9 @@ export default function RecetteDetail({
   const [editionInstructions, setEditionInstructions] = useState(false)
   const [instructionsTemp, setInstructionsTemp] = useState(recette.instructions || '')
 
+  const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
+  const [uploadEnCours, setUploadEnCours] = useState(false)
+
   const [recetteIngredients, setRecetteIngredients] = useState<RecetteIngredient[]>(recetteIngredientsInitial)
 
   const [recherche, setRecherche] = useState('')
@@ -145,6 +148,56 @@ export default function RecetteDetail({
     setInstructions(instructionsTemp.trim())
     setEditionInstructions(false)
     setMessage('')
+  }
+
+  const uploaderPhoto = async (fichier: File) => {
+    setUploadEnCours(true)
+    setMessage('')
+
+    const extension = fichier.name.split('.').pop()
+    const cheminFichier = `${recette.recette_id}-${Date.now()}.${extension}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('photos-recettes')
+      .upload(cheminFichier, fichier, { upsert: true })
+
+    if (uploadError) {
+      setMessage(uploadError.message)
+      setUploadEnCours(false)
+      return
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('photos-recettes')
+      .getPublicUrl(cheminFichier)
+
+    const { error: updateError } = await supabase
+      .from('recettes')
+      .update({ photo_url: urlData.publicUrl })
+      .eq('recette_id', recette.recette_id)
+
+    if (updateError) {
+      setMessage(updateError.message)
+      setUploadEnCours(false)
+      return
+    }
+
+    setPhotoUrl(urlData.publicUrl)
+    setUploadEnCours(false)
+  }
+
+  const supprimerPhoto = async () => {
+    const { error } = await supabase
+      .from('recettes')
+      .update({ photo_url: null })
+      .eq('recette_id', recette.recette_id)
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    setPhotoUrl('')
   }
 
   const handleTagsChange = async (nouvelleSelection: number[]) => {
@@ -282,59 +335,6 @@ export default function RecetteDetail({
     )
   }
 
-const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
-  const [uploadEnCours, setUploadEnCours] = useState(false)
-
-  const uploaderPhoto = async (fichier: File) => {
-    setUploadEnCours(true)
-    setMessage('')
-
-    const extension = fichier.name.split('.').pop()
-    const cheminFichier = `${recette.recette_id}-${Date.now()}.${extension}`
-
-    const { error: uploadError } = await supabase.storage
-      .from('photos-recettes')
-      .upload(cheminFichier, fichier, { upsert: true })
-
-    if (uploadError) {
-      setMessage(uploadError.message)
-      setUploadEnCours(false)
-      return
-    }
-
-    const { data: urlData } = supabase.storage
-      .from('photos-recettes')
-      .getPublicUrl(cheminFichier)
-
-    const { error: updateError } = await supabase
-      .from('recettes')
-      .update({ photo_url: urlData.publicUrl })
-      .eq('recette_id', recette.recette_id)
-
-    if (updateError) {
-      setMessage(updateError.message)
-      setUploadEnCours(false)
-      return
-    }
-
-    setPhotoUrl(urlData.publicUrl)
-    setUploadEnCours(false)
-  }
-
-  const supprimerPhoto = async () => {
-    const { error } = await supabase
-      .from('recettes')
-      .update({ photo_url: null })
-      .eq('recette_id', recette.recette_id)
-
-    if (error) {
-      setMessage(error.message)
-      return
-    }
-
-    setPhotoUrl('')
-  }
-  
   return (
     <main className="min-h-screen bg-fond text-texte px-6 py-10 md:px-10">
       <div className="max-w-2xl mx-auto">
@@ -351,12 +351,12 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
               <input
                 value={nomTemp}
                 onChange={(e) => setNomTemp(e.target.value)}
-                className="bg-surface border border-ligne rounded-lg px-3 py-2 font-display italic text-2xl text-texte flex-1 focus:outline-none focus:border-or"
+                className="bg-surface border border-ligne rounded-[--radius-champ] px-3 py-2 font-display italic text-2xl text-texte flex-1 focus:outline-none focus:border-or"
                 autoFocus
               />
               <button
                 onClick={renommer}
-                className="bg-emeraude text-fond px-4 py-2 rounded-lg font-sans text-sm hover:opacity-90 transition-opacity"
+                className="bg-emeraude text-fond px-4 py-2 rounded-[--radius-champ] font-sans text-sm hover:opacity-90 transition-opacity"
               >
                 Enregistrer
               </button>
@@ -365,7 +365,7 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
                   setNomTemp(nom)
                   setEditionNom(false)
                 }}
-                className="bg-surface-2 text-texte-muted px-4 py-2 rounded-lg font-sans text-sm hover:text-texte transition-colors"
+                className="bg-surface-2 text-texte-muted px-4 py-2 rounded-[--radius-champ] font-sans text-sm hover:text-texte transition-colors"
               >
                 Annuler
               </button>
@@ -378,13 +378,13 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
               <div className="flex gap-2 shrink-0">
                 <button
                   onClick={() => setEditionNom(true)}
-                  className="font-mono text-xs uppercase tracking-wide border border-ligne text-texte-muted px-3 py-2 rounded-lg hover:border-or hover:text-or transition-colors"
+                  className="font-mono text-xs uppercase tracking-wide border border-ligne text-texte-muted px-3 py-2 rounded-[--radius-champ] hover:border-or hover:text-or transition-colors"
                 >
                   Renommer
                 </button>
                 <button
                   onClick={supprimerRecette}
-                  className="font-mono text-xs uppercase tracking-wide border border-corail text-corail px-3 py-2 rounded-lg hover:bg-corail hover:text-fond transition-colors"
+                  className="font-mono text-xs uppercase tracking-wide border border-corail text-corail px-3 py-2 rounded-[--radius-champ] hover:bg-corail hover:text-fond transition-colors"
                 >
                   Supprimer
                 </button>
@@ -393,23 +393,27 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
           )}
         </div>
 
+        {message && (
+          <p className="font-sans text-sm text-corail mb-4">{message}</p>
+        )}
+
         <div className="mb-6">
           {photoUrl ? (
             <div className="relative group">
               <img
                 src={photoUrl}
                 alt={nom}
-                className="w-full max-h-96 object-cover rounded-lg border border-ligne"
+                className="w-full max-h-96 object-cover rounded-[--radius-carte] border border-ligne"
               />
               <button
                 onClick={supprimerPhoto}
-                className="absolute top-3 right-3 font-mono text-xs uppercase tracking-wide bg-fond/80 text-corail border border-corail px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-3 right-3 font-mono text-xs uppercase tracking-wide bg-fond/80 text-corail border border-corail px-3 py-1 rounded-[--radius-champ] opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 Retirer la photo
               </button>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center border border-dashed border-ligne rounded-lg h-40 cursor-pointer hover:border-or transition-colors">
+            <label className="flex flex-col items-center justify-center border border-dashed border-ligne rounded-[--radius-carte] h-40 cursor-pointer hover:border-or transition-colors">
               <span className="font-mono text-xs uppercase tracking-wide text-texte-muted">
                 {uploadEnCours ? 'Envoi en cours...' : '+ Ajouter une photo'}
               </span>
@@ -426,10 +430,6 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
             </label>
           )}
         </div>
-        
-        {message && (
-          <p className="font-sans text-sm text-corail mb-4">{message}</p>
-        )}
 
         <div className="mb-6">
           <p className="font-mono text-xs uppercase tracking-wide text-texte-muted mb-2">
@@ -444,7 +444,7 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
           />
         </div>
 
-       <div className="mb-6">
+        <div className="mb-6">
           <p className="font-mono text-xs uppercase tracking-wide text-texte-muted mb-2">
             Lien vers un site tiers
           </p>
@@ -454,12 +454,12 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
                 value={lienTemp}
                 onChange={(e) => setLienTemp(e.target.value)}
                 placeholder="https://..."
-                className="bg-surface border border-ligne rounded-lg px-3 py-2 font-sans text-sm text-texte flex-1 focus:outline-none focus:border-or"
+                className="bg-surface border border-ligne rounded-[--radius-champ] px-3 py-2 font-sans text-sm text-texte flex-1 focus:outline-none focus:border-or"
                 autoFocus
               />
               <button
                 onClick={enregistrerLien}
-                className="bg-emeraude text-fond px-3 py-2 rounded-lg font-sans text-sm hover:opacity-90 transition-opacity"
+                className="bg-emeraude text-fond px-3 py-2 rounded-[--radius-champ] font-sans text-sm hover:opacity-90 transition-opacity"
               >
                 Enregistrer
               </button>
@@ -468,7 +468,7 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
                   setLienTemp(lienExterne)
                   setEditionLien(false)
                 }}
-                className="bg-surface-2 text-texte-muted px-3 py-2 rounded-lg font-sans text-sm hover:text-texte transition-colors"
+                className="bg-surface-2 text-texte-muted px-3 py-2 rounded-[--radius-champ] font-sans text-sm hover:text-texte transition-colors"
               >
                 Annuler
               </button>
@@ -504,13 +504,13 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
                 value={instructionsTemp}
                 onChange={(e) => setInstructionsTemp(e.target.value)}
                 rows={6}
-                className="bg-surface border border-ligne rounded-lg px-3 py-2 font-sans text-sm text-texte w-full mb-2 focus:outline-none focus:border-or"
+                className="bg-surface border border-ligne rounded-[--radius-champ] px-3 py-2 font-sans text-sm text-texte w-full mb-2 focus:outline-none focus:border-or"
                 autoFocus
               />
               <div className="flex gap-2">
                 <button
                   onClick={enregistrerInstructions}
-                  className="bg-emeraude text-fond px-3 py-2 rounded-lg font-sans text-sm hover:opacity-90 transition-opacity"
+                  className="bg-emeraude text-fond px-3 py-2 rounded-[--radius-champ] font-sans text-sm hover:opacity-90 transition-opacity"
                 >
                   Enregistrer
                 </button>
@@ -519,7 +519,7 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
                     setInstructionsTemp(instructions)
                     setEditionInstructions(false)
                   }}
-                  className="bg-surface-2 text-texte-muted px-3 py-2 rounded-lg font-sans text-sm hover:text-texte transition-colors"
+                  className="bg-surface-2 text-texte-muted px-3 py-2 rounded-[--radius-champ] font-sans text-sm hover:text-texte transition-colors"
                 >
                   Annuler
                 </button>
@@ -558,7 +558,7 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
             Aucun ingrédient pour cette recette.
           </p>
         ) : (
-          <div className="mb-8 bg-surface border border-ligne rounded-lg divide-y divide-ligne">
+          <div className="mb-8 bg-surface border border-ligne rounded-[--radius-carte] shadow-[--shadow-carte] divide-y divide-ligne overflow-hidden">
             {ingredientsAssocies.map((ingredient) => (
               <div
                 key={ingredient.ingredient_id}
@@ -575,10 +575,10 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
                         ingredient.obligatoire
                       )
                     }
-                    className={`font-mono text-xs uppercase tracking-wide px-2 py-1 rounded-full border transition-colors ${
+                    className={`text-xs font-medium px-2 py-1 rounded-[--radius-badge] transition-colors ${
                       ingredient.obligatoire
-                        ? 'border-or text-or'
-                        : 'border-ligne text-texte-muted'
+                        ? 'bg-or text-fond'
+                        : 'border border-ligne text-texte-muted'
                     }`}
                   >
                     {ingredient.obligatoire ? 'Obligatoire' : 'Optionnel'}
@@ -604,7 +604,7 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
             value={recherche}
             onChange={(e) => setRecherche(e.target.value)}
             placeholder="Rechercher un ingrédient..."
-            className="bg-surface border border-ligne rounded-lg px-3 py-2 font-sans text-sm text-texte flex-1 min-w-[200px] focus:outline-none focus:border-or"
+            className="bg-surface border border-ligne rounded-[--radius-champ] px-3 py-2 font-sans text-sm text-texte flex-1 min-w-[200px] focus:outline-none focus:border-or"
           />
           <label className="flex items-center gap-2 font-sans text-sm text-texte-muted">
             <input
@@ -618,7 +618,7 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
         </div>
 
         {recherche.length > 0 && (
-          <div className="max-h-64 overflow-auto bg-surface border border-ligne rounded-lg divide-y divide-ligne">
+          <div className="max-h-64 overflow-auto bg-surface border border-ligne rounded-[--radius-carte] divide-y divide-ligne">
             {ingredientsDisponibles.map((ingredient) => (
               <div
                 key={ingredient.ingredient_id}
@@ -629,7 +629,7 @@ const [photoUrl, setPhotoUrl] = useState(recette.photo_url || '')
                 </span>
                 <button
                   onClick={() => ajouterIngredient(ingredient)}
-                  className="bg-or text-fond px-3 py-1 rounded-full font-sans text-sm hover:opacity-90 transition-opacity"
+                  className="bg-or text-fond px-3 py-1 rounded-[--radius-badge] font-sans text-sm hover:opacity-90 transition-opacity"
                 >
                   Ajouter
                 </button>
