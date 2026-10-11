@@ -37,6 +37,48 @@ type RecetteTag = {
   tag_id: number
 }
 
+const BUCKET_PHOTOS = 'photos-recettes'
+const LARGEUR_MAX_PHOTO = 1600
+const QUALITE_JPEG = 0.82
+
+const cheminDepuisUrl = (url: string): string | null => {
+  const marqueur = `/${BUCKET_PHOTOS}/`
+  const index = url.indexOf(marqueur)
+  if (index === -1) return null
+  return decodeURIComponent(url.slice(index + marqueur.length).split('?')[0])
+}
+
+const reduireImage = async (fichier: File): Promise<Blob | null> => {
+  try {
+    const bitmap = await createImageBitmap(fichier)
+    const ratio = Math.min(1, LARGEUR_MAX_PHOTO / bitmap.width)
+    const largeur = Math.round(bitmap.width * ratio)
+    const hauteur = Math.round(bitmap.height * ratio)
+
+    const canvas = document.createElement('canvas')
+    canvas.width = largeur
+    canvas.height = hauteur
+
+    const contexte = canvas.getContext('2d')
+    if (!contexte) return null
+
+    contexte.fillStyle = '#FFFFFF'
+    contexte.fillRect(0, 0, largeur, hauteur)
+    contexte.drawImage(bitmap, 0, 0, largeur, hauteur)
+    bitmap.close()
+
+    return await new Promise<Blob | null>((resolve) => canvas.toBlob((blob) => resolve(blob), 'image/jpeg', QUALITE_JPEG))
+  } catch {
+    return null
+  }
+}
+
+const supprimerFichierStockage = async (url: string) => {
+  const chemin = cheminDepuisUrl(url)
+  if (!chemin) return
+  await supabase.storage.from(BUCKET_PHOTOS).remove([chemin])
+}
+
 export default function RecetteDetail({
   recette,
   recetteIngredientsInitial,
@@ -154,12 +196,24 @@ export default function RecetteDetail({
     setUploadEnCours(true)
     setMessage('')
 
-    const extension = fichier.name.split('.').pop()
+    const ancienneUrl = photoUrl
+
+    const blobReduit = await reduireImage(fichier)
+    const aEnvoyer: Blob = blobReduit || fichier
+    const extension = blobReduit
+      ? 'jpg'
+      : (fichier.name.split('.').pop() || 'jpg').toLowerCase()
+    const typeContenu = blobReduit
+      ? 'image/jpeg'
+      : fichier.type || 'application/octet-stream'
     const cheminFichier = `${recette.recette_id}-${Date.now()}.${extension}`
 
     const { error: uploadError } = await supabase.storage
-      .from('photos-recettes')
-      .upload(cheminFichier, fichier, { upsert: true })
+      .from(BUCKET_PHOTOS)
+      .upload(cheminFichier, aEnvoyer, {
+        contentType: typeContenu,
+        upsert: false,
+      })
 
     if (uploadError) {
       setMessage(uploadError.message)
@@ -168,36 +222,67 @@ export default function RecetteDetail({
     }
 
     const { data: urlData } = supabase.storage
-      .from('photos-recettes')
+      .from(BUCKET_PHOTOS)
       .getPublicUrl(cheminFichier)
 
-    const { error: updateError } = await supabase
+    const { data: lignesModifiees, error: updateError } = await supabase
       .from('recettes')
       .update({ photo_url: urlData.publicUrl })
       .eq('recette_id', recette.recette_id)
+      .select('recette_id')
 
     if (updateError) {
       setMessage(updateError.message)
+      await supprimerFichierStockage(urlData.publicUrl)
+      setUploadEnCours(false)
+      return
+    }
+
+    if (!lignesModifiees || lignesModifiees.length === 0) {
+      setMessage(
+        "La photo a été envoyée mais n'a pas pu être rattachée à la recette (policy UPDATE manquante sur « recettes » ?)."
+      )
+      await supprimerFichierStockage(urlData.publicUrl)
       setUploadEnCours(false)
       return
     }
 
     setPhotoUrl(urlData.publicUrl)
+
+    if (ancienneUrl) {
+      await supprimerFichierStockage(ancienneUrl)
+    }
+
     setUploadEnCours(false)
   }
 
   const supprimerPhoto = async () => {
-    const { error } = await supabase
+    const urlActuelle = photoUrl
+
+    const { data: lignesModifiees, error } = await supabase
       .from('recettes')
       .update({ photo_url: null })
       .eq('recette_id', recette.recette_id)
+      .select('recette_id')
 
     if (error) {
       setMessage(error.message)
       return
     }
 
+    if (!lignesModifiees || lignesModifiees.length === 0) {
+      setMessage(
+        'Impossible de retirer la photo (policy UPDATE manquante sur « recettes » ?).'
+      )
+      return
+    }
+
     setPhotoUrl('')
+    setMessage('')
+
+    if (urlActuelle) {
+      await supprimerFichierStockage(urlActuelle)
+    }
   }
 
   const handleTagsChange = async (nouvelleSelection: number[]) => {
@@ -265,6 +350,10 @@ export default function RecetteDetail({
     if (errorRecette) {
       setMessage(errorRecette.message)
       return
+    }
+
+    if (photoUrl) {
+      await supprimerFichierStockage(photoUrl)
     }
 
     router.push('/')
@@ -399,18 +488,39 @@ export default function RecetteDetail({
 
         <div className="mb-6">
           {photoUrl ? (
-            <div className="relative group">
+            <div>
               <img
                 src={photoUrl}
                 alt={nom}
                 className="w-full max-h-96 object-cover rounded-[--radius-carte] border border-ligne"
               />
-              <button
-                onClick={supprimerPhoto}
-                className="absolute top-3 right-3 font-mono text-xs uppercase tracking-wide bg-fond/80 text-corail border border-corail px-3 py-1 rounded-[--radius-champ] opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                Retirer la photo
-              </button>
+              <div className="flex gap-4 mt-2">
+                <label
+                  className={`font-mono text-xs uppercase tracking-wide text-texte-muted hover:text-or transition-colors cursor-pointer ${
+                    uploadEnCours ? 'opacity-50 pointer-events-none' : ''
+                  }`}
+                >
+                  {uploadEnCours ? 'Envoi en cours...' : 'Remplacer la photo'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadEnCours}
+                    onChange={(e) => {
+                      const fichier = e.target.files?.[0]
+                      if (fichier) uploaderPhoto(fichier)
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+                <button
+                  onClick={supprimerPhoto}
+                  disabled={uploadEnCours}
+                  className="font-mono text-xs uppercase tracking-wide text-corail hover:underline disabled:opacity-50"
+                >
+                  Retirer la photo
+                </button>
+              </div>
             </div>
           ) : (
             <label className="flex flex-col items-center justify-center border border-dashed border-ligne rounded-[--radius-carte] h-40 cursor-pointer hover:border-or transition-colors">
@@ -425,6 +535,7 @@ export default function RecetteDetail({
                 onChange={(e) => {
                   const fichier = e.target.files?.[0]
                   if (fichier) uploaderPhoto(fichier)
+                  e.target.value = ''
                 }}
               />
             </label>
