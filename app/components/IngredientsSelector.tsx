@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { couleurTag } from '@/lib/tagColor'
+import { normaliser } from '@/lib/similarite'
 
 type Ingredient = {
   ingredient_id: number
   nom: string
+  mois_disponibles?: number[] | null
 }
 
 type Recette = {
@@ -35,7 +37,7 @@ type IngredientTag = {
 
 type Position = { x: number; y: number }
 
-type Modale = 'suppression' | 'fusion' | null
+type Modale = 'suppression' | 'fusion' | 'saison' | null
 
 const CENTRE: Position = { x: 400, y: 380 }
 const RAYON_BASE = 250
@@ -43,8 +45,56 @@ const RAYON_PROCHE = 125
 const RAYON_SELECTIONNE = 65
 const DUREE_ANIMATION = 650
 
+const LIMITES_AFFICHAGE: (number | null)[] = [25, 40, 80, null]
+const LIMITE_PAR_DEFAUT = 40
+
+const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
+
+const PRESETS_SAISONS: { libelle: string; mois: number[] }[] = [
+  { libelle: 'Printemps', mois: [3, 4, 5] },
+  { libelle: 'Été', mois: [6, 7, 8] },
+  { libelle: 'Automne', mois: [9, 10, 11] },
+  { libelle: 'Hiver', mois: [12, 1, 2] },
+]
+
+const CLASSE_LABEL = 'font-mono text-xs uppercase tracking-wide text-texte-muted mb-2'
+
 function easeOutCubic(t: number) {
   return 1 - Math.pow(1 - t, 3)
+}
+
+function normaliserMois(mois: number[]) {
+  return Array.from(new Set(mois))
+    .filter((m) => m >= 1 && m <= 12)
+    .sort((a, b) => a - b)
+}
+
+function libelleMois(mois: number[] | null | undefined): string {
+  if (!mois || mois.length === 0 || mois.length >= 12) return "Toute l'année"
+
+  const tries = normaliserMois(mois)
+  const plages: number[][] = []
+
+  tries.forEach((m) => {
+    const derniere = plages[plages.length - 1]
+    if (derniere && m === derniere[derniere.length - 1] + 1) {
+      derniere.push(m)
+    } else {
+      plages.push([m])
+    }
+  })
+
+  return plages
+    .map((plage) =>
+      plage.length === 1
+        ? MOIS_COURTS[plage[0] - 1]
+        : `${MOIS_COURTS[plage[0] - 1]}–${MOIS_COURTS[plage[plage.length - 1] - 1]}`
+    )
+    .join(', ')
+}
+
+function decalageRayon(ingredientId: number) {
+  return (((ingredientId * 37) % 3) - 1) * 18
 }
 
 export default function IngredientsSelector({
@@ -65,6 +115,10 @@ export default function IngredientsSelector({
   const [selected, setSelected] = useState<string[]>([])
   const [selectedRecipeId, setSelectedRecipeId] = useState<number | null>(null)
   const [tagsFiltre, setTagsFiltre] = useState<number[]>([])
+  const [moisFiltre, setMoisFiltre] = useState<number | null>(null)
+  const [inclureToutesAnnee, setInclureToutesAnnee] = useState(true)
+  const [limite, setLimite] = useState<number | null>(LIMITE_PAR_DEFAUT)
+  const [recherche, setRecherche] = useState('')
   const [positions, setPositions] = useState<Record<number, Position>>({})
   const [hoveredId, setHoveredId] = useState<number | null>(null)
 
@@ -72,6 +126,7 @@ export default function IngredientsSelector({
   const [selectionGestion, setSelectionGestion] = useState<number[]>([])
   const [modale, setModale] = useState<Modale>(null)
   const [ingredientCible, setIngredientCible] = useState<number | null>(null)
+  const [moisEdition, setMoisEdition] = useState<number[]>([])
   const [enCoursGestion, setEnCoursGestion] = useState(false)
   const [erreurGestion, setErreurGestion] = useState('')
 
@@ -82,116 +137,177 @@ export default function IngredientsSelector({
     positionsRef.current = positions
   }, [positions])
 
-  const toggleIngredient = (nom: string) => {
-    setSelected((current) =>
-      current.includes(nom)
-        ? current.filter((i) => i !== nom)
-        : [...current, nom]
-    )
-  }
+  // --- Index calculés une seule fois (évite les boucles imbriquées coûteuses) ---
 
-  const toggleSelectionGestion = (ingredientId: number) => {
-    setSelectionGestion((current) =>
-      current.includes(ingredientId)
-        ? current.filter((id) => id !== ingredientId)
-        : [...current, ingredientId]
-    )
-  }
-
-  const basculerModeGestion = () => {
-    setModeGestion((current) => !current)
-    setSelected([])
-    setSelectedRecipeId(null)
-    setSelectionGestion([])
-    setModale(null)
-    setIngredientCible(null)
-    setErreurGestion('')
-  }
-
-  const toggleTagFiltre = (tagId: number) => {
-    setTagsFiltre((current) =>
-      current.includes(tagId)
-        ? current.filter((id) => id !== tagId)
-        : [...current, tagId]
-    )
-  }
-
-  const recettesCompatibles = recettes
-    .map((recette) => {
-      const ingredientsRecette = recetteIngredients.filter(
-        (ri) => ri.recette_id === recette.recette_id
-      )
-
-      const ingredientsTrouves = ingredientsRecette.filter((ri) => {
-        const ingredient = ingredients.find(
-          (i) => i.ingredient_id === ri.ingredient_id
-        )
-        return ingredient && selected.includes(ingredient.nom)
-      })
-
-      const score =
-        ingredientsRecette.length > 0
-          ? Math.round(
-              (ingredientsTrouves.length / ingredientsRecette.length) * 100
-            )
-          : 0
-
-      return {
-        id: recette.recette_id,
-        nom: recette.nom,
-        score,
-      }
+  const ingredientsParRecette = useMemo(() => {
+    const map = new Map<number, Set<number>>()
+    recetteIngredients.forEach((ri) => {
+      const ensemble = map.get(ri.recette_id) || new Set<number>()
+      ensemble.add(ri.ingredient_id)
+      map.set(ri.recette_id, ensemble)
     })
-    .filter((r) => r.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 10)
+    return map
+  }, [recetteIngredients])
 
-  const ingredientsCompatibles = ingredients.map((ingredient) => {
-    if (selected.includes(ingredient.nom)) {
-      return { id: ingredient.ingredient_id, score: 0 }
+  const usageParIngredient = useMemo(() => {
+    const map = new Map<number, number>()
+    recetteIngredients.forEach((ri) => {
+      map.set(ri.ingredient_id, (map.get(ri.ingredient_id) || 0) + 1)
+    })
+    return map
+  }, [recetteIngredients])
+
+  const tagsParIngredient = useMemo(() => {
+    const map = new Map<number, Set<number>>()
+    ingredientTags.forEach((it) => {
+      const ensemble = map.get(it.ingredient_id) || new Set<number>()
+      ensemble.add(it.tag_id)
+      map.set(it.ingredient_id, ensemble)
+    })
+    return map
+  }, [ingredientTags])
+
+  const selectedIds = useMemo(
+    () =>
+      new Set(
+        ingredients
+          .filter((i) => selected.includes(i.nom))
+          .map((i) => i.ingredient_id)
+      ),
+    [ingredients, selected]
+  )
+
+  const idsSelectionPremiers = useMemo(
+    () =>
+      selected.map(
+        (nom) => ingredients.find((i) => i.nom === nom)?.ingredient_id
+      ),
+    [selected, ingredients]
+  )
+
+  // Score : nombre de recettes contenant toute la sélection ET l'ingrédient.
+  // Sans sélection, le score correspond au nombre de recettes utilisant l'ingrédient.
+  const scoreParIngredient = useMemo(() => {
+    const map = new Map<number, number>()
+
+    if (selected.length === 0) {
+      usageParIngredient.forEach((usage, id) => {
+        map.set(id, usage)
+      })
+      return map
     }
 
-    let score = 0
+    if (idsSelectionPremiers.some((id) => id === undefined)) return map
 
-    recettes.forEach((recette) => {
-      const ingredientsRecette = recetteIngredients
-        .filter((ri) => ri.recette_id === recette.recette_id)
-        .map((ri) => ri.ingredient_id)
+    ingredientsParRecette.forEach((ensemble) => {
+      const contientSelection = idsSelectionPremiers.every(
+        (id) => id !== undefined && ensemble.has(id)
+      )
+      if (!contientSelection) return
 
-      const recetteContientSelection = selected.every((nom) => {
-        const ingredientSelectionne = ingredients.find((i) => i.nom === nom)
-        return (
-          ingredientSelectionne &&
-          ingredientsRecette.includes(ingredientSelectionne.ingredient_id)
-        )
+      ensemble.forEach((id) => {
+        if (selectedIds.has(id)) return
+        map.set(id, (map.get(id) || 0) + 1)
       })
-
-      if (
-        recetteContientSelection &&
-        ingredientsRecette.includes(ingredient.ingredient_id)
-      ) {
-        score++
-      }
     })
 
-    return { id: ingredient.ingredient_id, score }
-  })
+    return map
+  }, [selected, idsSelectionPremiers, ingredientsParRecette, usageParIngredient, selectedIds])
 
   const getCompatibilityScore = (ingredientId: number) => {
-    return (
-      ingredientsCompatibles.find((i) => i.id === ingredientId)?.score || 0
-    )
+    return scoreParIngredient.get(ingredientId) || 0
   }
 
-  const ingredientsAffiches =
-    tagsFiltre.length === 0
-      ? ingredients
-      : ingredients.filter((ingredient) => {
-          const tagsDeLIngredient = ingredientTags
-            .filter((it) => it.ingredient_id === ingredient.ingredient_id)
-            .map((it) => it.tag_id)
-          return tagsFiltre.every((tagId) => tagsDeLIngredient.includes(tagId))
-        })
+  const recettesCompatibles = useMemo((): { id: number; nom: string; score: number }[] => {
+    if (selected.length === 0) return []
+
+    return recettes
+      .map((recette) => {
+        const ensemble = ingredientsParRecette.get(recette.recette_id)
+        const total = ensemble ? ensemble.size : 0
+        let trouves = 0
+
+        if (ensemble) {
+          ensemble.forEach((id) => {
+            if (selectedIds.has(id)) trouves++
+          })
+        }
+
+        const score = total > 0 ? Math.round((trouves / total) * 100) : 0
+
+        return {
+          id: recette.recette_id,
+          nom: recette.nom,
+          score,
+        }
+      })
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10)
+  }, [selected, recettes, ingredientsParRecette, selectedIds])
+
+  // --- Filtres (tags + saison), puis limite aux N plus pertinents ---
+
+  const ingredientsFiltres = useMemo((): Ingredient[] => {
+    return ingredients.filter((ingredient) => {
+      if (tagsFiltre.length > 0) {
+        const tagsDeLIngredient = tagsParIngredient.get(ingredient.ingredient_id)
+        const tousPresents = tagsFiltre.every((tagId) =>
+          Boolean(tagsDeLIngredient && tagsDeLIngredient.has(tagId))
+        )
+        if (!tousPresents) return false
+      }
+
+      if (moisFiltre !== null) {
+        const mois = ingredient.mois_disponibles || []
+        const estSaisonnier = mois.length > 0 && mois.length < 12
+        if (!estSaisonnier) return inclureToutesAnnee
+        if (!mois.includes(moisFiltre)) return false
+      }
+
+      return true
+    })
+  }, [ingredients, tagsFiltre, tagsParIngredient, moisFiltre, inclureToutesAnnee])
+
+  const ingredientsAffiches = useMemo((): Ingredient[] => {
+    const classes = [...ingredientsFiltres].sort((a, b) => {
+      const ecartScore =
+        (scoreParIngredient.get(b.ingredient_id) || 0) -
+        (scoreParIngredient.get(a.ingredient_id) || 0)
+      if (ecartScore !== 0) return ecartScore
+
+      const ecartUsage =
+        (usageParIngredient.get(b.ingredient_id) || 0) -
+        (usageParIngredient.get(a.ingredient_id) || 0)
+      if (ecartUsage !== 0) return ecartUsage
+
+      return a.nom.localeCompare(b.nom, 'fr')
+    })
+
+    const retenus = limite === null ? classes : classes.slice(0, limite)
+    const ids = new Set(retenus.map((i) => i.ingredient_id))
+
+    selectedIds.forEach((id) => ids.add(id))
+    selectionGestion.forEach((id) => ids.add(id))
+
+    return ingredients.filter((i) => ids.has(i.ingredient_id))
+  }, [ingredientsFiltres, ingredients, scoreParIngredient, usageParIngredient, limite, selectedIds, selectionGestion])
+
+  const resultatsRecherche = useMemo((): Ingredient[] => {
+    const terme = normaliser(recherche.trim())
+    if (terme.length === 0) return []
+
+    return ingredients
+      .filter((i) => normaliser(i.nom).includes(terme))
+      .sort((a, b) => {
+        const ecartUsage =
+          (usageParIngredient.get(b.ingredient_id) || 0) -
+          (usageParIngredient.get(a.ingredient_id) || 0)
+        if (ecartUsage !== 0) return ecartUsage
+        return a.nom.localeCompare(b.nom, 'fr')
+      })
+      .slice(0, 8)
+  }, [recherche, ingredients, usageParIngredient])
 
   const angleParId = useMemo(() => {
     const map = new Map<number, number>()
@@ -203,10 +319,6 @@ export default function IngredientsSelector({
     return map
   }, [ingredients])
 
-  const selectedIds = new Set(
-    ingredients.filter((i) => selected.includes(i.nom)).map((i) => i.ingredient_id)
-  )
-
   const scoreMax = Math.max(
     1,
     ...ingredientsAffiches.map((ing) => getCompatibilityScore(ing.ingredient_id))
@@ -217,14 +329,15 @@ export default function IngredientsSelector({
 
     ingredientsAffiches.forEach((ingredient) => {
       const angle = angleParId.get(ingredient.ingredient_id) || 0
-      let rayon = RAYON_BASE
+      const rayonDeBase = RAYON_BASE + decalageRayon(ingredient.ingredient_id)
+      let rayon = rayonDeBase
 
       if (selected.includes(ingredient.nom)) {
         rayon = RAYON_SELECTIONNE
       } else if (selected.length > 0) {
         const score = getCompatibilityScore(ingredient.ingredient_id)
         if (score > 0) {
-          rayon = RAYON_BASE - (score / scoreMax) * (RAYON_BASE - RAYON_PROCHE)
+          rayon = rayonDeBase - (score / scoreMax) * (rayonDeBase - RAYON_PROCHE)
         }
       }
 
@@ -237,19 +350,16 @@ export default function IngredientsSelector({
     return cibles
   }
 
+  const cleAffichage =
+    ingredientsAffiches.map((i) => i.ingredient_id).join(',') +
+    '|' +
+    selected.join(',')
+
   useEffect(() => {
     const cibles = calculerCibles()
     const depart = positionsRef.current
-    const toutesPresentes = ingredientsAffiches.every(
-      (ing) => depart[ing.ingredient_id]
-    )
 
     if (animationRef.current) cancelAnimationFrame(animationRef.current)
-
-    if (!toutesPresentes) {
-      setPositions(cibles)
-      return
-    }
 
     const debut = performance.now()
 
@@ -259,8 +369,8 @@ export default function IngredientsSelector({
       const suivant: Record<number, Position> = {}
 
       ingredientsAffiches.forEach((ing) => {
-        const from = depart[ing.ingredient_id] || cibles[ing.ingredient_id]
         const to = cibles[ing.ingredient_id]
+        const from = depart[ing.ingredient_id] || to
         suivant[ing.ingredient_id] = {
           x: from.x + (to.x - from.x) * t2,
           y: from.y + (to.y - from.y) * t2,
@@ -280,23 +390,18 @@ export default function IngredientsSelector({
       if (animationRef.current) cancelAnimationFrame(animationRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, tagsFiltre])
+  }, [cleAffichage])
 
-  const arcs: { a: number; b: number; poids: number }[] = []
-  {
+  const arcs = useMemo(() => {
     const idsAffiches = new Set(ingredientsAffiches.map((i) => i.ingredient_id))
-    const parRecette = new Map<number, number[]>()
-
-    recetteIngredients.forEach((ri) => {
-      if (!idsAffiches.has(ri.ingredient_id)) return
-      const liste = parRecette.get(ri.recette_id) || []
-      liste.push(ri.ingredient_id)
-      parRecette.set(ri.recette_id, liste)
-    })
-
     const poidsParPaire = new Map<string, number>()
 
-    parRecette.forEach((liste) => {
+    ingredientsParRecette.forEach((ensemble) => {
+      const liste: number[] = []
+      ensemble.forEach((id) => {
+        if (idsAffiches.has(id)) liste.push(id)
+      })
+
       for (let i = 0; i < liste.length; i++) {
         for (let j = i + 1; j < liste.length; j++) {
           const a = Math.min(liste[i], liste[j])
@@ -307,17 +412,70 @@ export default function IngredientsSelector({
       }
     })
 
+    const resultat: { a: number; b: number; poids: number }[] = []
     poidsParPaire.forEach((poids, cle) => {
       const [a, b] = cle.split('-').map(Number)
-      arcs.push({ a, b, poids })
+      resultat.push({ a, b, poids })
     })
-  }
+    return resultat
+  }, [ingredientsAffiches, ingredientsParRecette])
 
   const recetteSelectionnee = recettesCompatibles.find(
     (r) => r.id === selectedRecipeId
   )
 
-  // --- Mode gestion : suppression / fusion ---
+  // --- Handlers de sélection / filtres ---
+
+  const toggleIngredient = (nom: string) => {
+    setSelected((current) =>
+      current.includes(nom)
+        ? current.filter((i) => i !== nom)
+        : [...current, nom]
+    )
+  }
+
+  const toggleSelectionGestion = (ingredientId: number) => {
+    setSelectionGestion((current) =>
+      current.includes(ingredientId)
+        ? current.filter((id) => id !== ingredientId)
+        : [...current, ingredientId]
+    )
+  }
+
+  const toggleTagFiltre = (tagId: number) => {
+    setTagsFiltre((current) =>
+      current.includes(tagId)
+        ? current.filter((id) => id !== tagId)
+        : [...current, tagId]
+    )
+  }
+
+  const choisirResultatRecherche = (ingredient: Ingredient) => {
+    if (modeGestion) {
+      setSelectionGestion((current) =>
+        current.includes(ingredient.ingredient_id)
+          ? current
+          : [...current, ingredient.ingredient_id]
+      )
+    } else {
+      setSelected((current) =>
+        current.includes(ingredient.nom) ? current : [...current, ingredient.nom]
+      )
+    }
+    setRecherche('')
+  }
+
+  const basculerModeGestion = () => {
+    setModeGestion((current) => !current)
+    setSelected([])
+    setSelectedRecipeId(null)
+    setSelectionGestion([])
+    setModale(null)
+    setIngredientCible(null)
+    setErreurGestion('')
+  }
+
+  // --- Mode gestion : suppression / fusion / saison ---
 
   const ingredientsSelectionGestion = ingredients.filter((i) =>
     selectionGestion.includes(i.ingredient_id)
@@ -327,13 +485,18 @@ export default function IngredientsSelector({
     ingredients.find((i) => i.ingredient_id === id)?.nom || `#${id}`
 
   const recettesImpacteesParSuppression = useMemo(() => {
-    const recetteIdsImpactes = new Set(
-      recetteIngredients
-        .filter((ri) => selectionGestion.includes(ri.ingredient_id))
-        .map((ri) => ri.recette_id)
-    )
+    const recetteIdsImpactes = new Set<number>()
+    ingredientsParRecette.forEach((ensemble, recetteId) => {
+      if (selectionGestion.some((id) => ensemble.has(id))) {
+        recetteIdsImpactes.add(recetteId)
+      }
+    })
     return recettes.filter((r) => recetteIdsImpactes.has(r.recette_id))
-  }, [selectionGestion, recetteIngredients, recettes])
+  }, [selectionGestion, ingredientsParRecette, recettes])
+
+  const selectionnerAffiches = () => {
+    setSelectionGestion(ingredientsAffiches.map((i) => i.ingredient_id))
+  }
 
   const ouvrirModaleSuppression = () => {
     setErreurGestion('')
@@ -347,11 +510,35 @@ export default function IngredientsSelector({
     setModale('fusion')
   }
 
+  const ouvrirModaleSaison = () => {
+    if (selectionGestion.length === 0) return
+
+    const premiers = normaliserMois(
+      ingredientsSelectionGestion[0]?.mois_disponibles || []
+    )
+    const tousIdentiques = ingredientsSelectionGestion.every(
+      (i) =>
+        normaliserMois(i.mois_disponibles || []).join(',') === premiers.join(',')
+    )
+
+    setMoisEdition(tousIdentiques ? premiers : [])
+    setErreurGestion('')
+    setModale('saison')
+  }
+
   const fermerModale = () => {
     if (enCoursGestion) return
     setModale(null)
     setIngredientCible(null)
     setErreurGestion('')
+  }
+
+  const toggleMoisEdition = (mois: number) => {
+    setMoisEdition((current) =>
+      current.includes(mois)
+        ? current.filter((m) => m !== mois)
+        : [...current, mois]
+    )
   }
 
   const infoIngredientPourFusion = (id: number) => {
@@ -365,7 +552,11 @@ export default function IngredientsSelector({
       .map((ri) => recettes.find((r) => r.recette_id === ri.recette_id)?.nom)
       .filter((nom): nom is string => Boolean(nom))
 
-    return { nomsTags, nomsRecettes }
+    const saison = libelleMois(
+      ingredients.find((i) => i.ingredient_id === id)?.mois_disponibles
+    )
+
+    return { nomsTags, nomsRecettes, saison }
   }
 
   const confirmerSuppression = async () => {
@@ -398,6 +589,38 @@ export default function IngredientsSelector({
       router.refresh()
     } catch (err: any) {
       setErreurGestion(err.message || 'Erreur pendant la suppression.')
+    }
+
+    setEnCoursGestion(false)
+  }
+
+  const appliquerSaison = async () => {
+    setErreurGestion('')
+    setEnCoursGestion(true)
+
+    try {
+      const mois = normaliserMois(moisEdition)
+      const valeur = mois.length === 0 || mois.length === 12 ? null : mois
+
+      const { data: lignesModifiees, error } = await supabase
+        .from('ingredients')
+        .update({ mois_disponibles: valeur })
+        .in('ingredient_id', selectionGestion)
+        .select('ingredient_id')
+
+      if (error) throw error
+
+      if (!lignesModifiees || lignesModifiees.length !== selectionGestion.length) {
+        throw new Error(
+          'Mise à jour incomplète : policy UPDATE manquante sur « ingredients » ?'
+        )
+      }
+
+      setSelectionGestion([])
+      setModale(null)
+      router.refresh()
+    } catch (err: any) {
+      setErreurGestion(err.message || 'Erreur pendant la mise à jour des saisons.')
     }
 
     setEnCoursGestion(false)
@@ -481,6 +704,33 @@ export default function IngredientsSelector({
         .eq('ingredient_id', idSource)
       if (errDeleteLiensSource) throw errDeleteLiensSource
 
+      const moisSource = normaliserMois(
+        ingredients.find((i) => i.ingredient_id === idSource)?.mois_disponibles || []
+      )
+      const moisCible = normaliserMois(
+        ingredients.find((i) => i.ingredient_id === idCible)?.mois_disponibles || []
+      )
+
+      if (moisSource.length > 0) {
+        const moisFusionnes = normaliserMois([...moisCible, ...moisSource])
+
+        if (moisFusionnes.join(',') !== moisCible.join(',')) {
+          const { data: lignesMois, error: errMois } = await supabase
+            .from('ingredients')
+            .update({
+              mois_disponibles: moisFusionnes.length === 12 ? null : moisFusionnes,
+            })
+            .eq('ingredient_id', idCible)
+            .select('ingredient_id')
+          if (errMois) throw errMois
+          if (!lignesMois || lignesMois.length === 0) {
+            throw new Error(
+              'Impossible de fusionner les saisons : policy UPDATE manquante sur « ingredients » ?'
+            )
+          }
+        }
+      }
+
       const { error: errDeleteIngredient } = await supabase
         .from('ingredients')
         .delete()
@@ -499,12 +749,14 @@ export default function IngredientsSelector({
   }
 
   return (
-    <div>
+    <div className={modeGestion && selectionGestion.length > 0 ? 'pb-24' : ''}>
       <div className="flex items-center justify-between mb-4">
-        <div />
+        <p className="font-mono text-xs text-texte-muted">
+          {ingredientsAffiches.length} affiché(s) sur {ingredientsFiltres.length}
+        </p>
         <button
           onClick={basculerModeGestion}
-          className={`font-mono text-xs uppercase tracking-wide px-3 py-1.5 rounded-[--radius-champ] border transition-colors ${
+          className={`font-mono text-xs uppercase tracking-wide px-3 py-1.5 rounded-full border transition-colors ${
             modeGestion
               ? 'bg-corail text-fond border-corail'
               : 'text-texte-muted border-ligne hover:border-corail hover:text-corail'
@@ -514,11 +766,48 @@ export default function IngredientsSelector({
         </button>
       </div>
 
+      <div className="mb-6 relative">
+        <p className={CLASSE_LABEL}>Rechercher un ingrédient</p>
+        <input
+          value={recherche}
+          onChange={(e) => setRecherche(e.target.value)}
+          placeholder="Ex. courgette, basilic…"
+          className="w-full bg-surface border border-ligne rounded-lg px-3 py-2 font-sans text-sm text-texte focus:outline-none focus:border-or"
+        />
+        {resultatsRecherche.length > 0 && (
+          <div className="absolute z-30 left-0 right-0 mt-1 bg-surface border border-ligne rounded-lg divide-y divide-ligne max-h-72 overflow-auto">
+            {resultatsRecherche.map((ingredient) => {
+              const dejaSelectionne = modeGestion
+                ? selectionGestion.includes(ingredient.ingredient_id)
+                : selected.includes(ingredient.nom)
+              const usage = usageParIngredient.get(ingredient.ingredient_id) || 0
+
+              return (
+                <button
+                  key={ingredient.ingredient_id}
+                  onClick={() => choisirResultatRecherche(ingredient)}
+                  disabled={dejaSelectionne}
+                  className="w-full flex justify-between items-center px-4 py-2 text-left hover:bg-surface-2 transition-colors disabled:opacity-40"
+                >
+                  <span className="font-sans text-sm text-texte">
+                    {ingredient.nom}
+                  </span>
+                  <span className="font-mono text-xs text-texte-muted">
+                    {dejaSelectionne ? '✓ sélectionné' : `${usage} recette(s)`}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+        <p className="font-sans text-xs text-texte-muted mt-1">
+          Choisir un résultat le sélectionne et l'affiche dans le réseau, même s'il n'en fait pas partie.
+        </p>
+      </div>
+
       {tags.length > 0 && (
         <div className="mb-6">
-          <p className="font-mono text-xs uppercase tracking-wide text-texte-muted mb-2">
-            Filtrer par tag
-          </p>
+          <p className={CLASSE_LABEL}>Filtrer par tag</p>
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => {
               const actif = tagsFiltre.includes(tag.tag_id)
@@ -527,11 +816,11 @@ export default function IngredientsSelector({
                 <button
                   key={tag.tag_id}
                   onClick={() => toggleTagFiltre(tag.tag_id)}
-                  className="px-3 py-1.5 rounded-[--radius-badge] text-xs font-medium transition-colors"
+                  className="px-3 py-1 rounded-full text-sm border transition-colors duration-200"
                   style={{
+                    borderColor: couleur,
                     backgroundColor: actif ? couleur : 'transparent',
-                    color: actif ? '#17140F' : '#9C9284',
-                    border: `1px solid ${actif ? couleur : '#3A342A'}`,
+                    color: actif ? '#17140F' : couleur,
                   }}
                 >
                   {tag.nom}
@@ -542,16 +831,99 @@ export default function IngredientsSelector({
         </div>
       )}
 
+      <div className="mb-6">
+        <p className={CLASSE_LABEL}>Saison</p>
+        <div className="flex flex-wrap gap-2 items-center">
+          <button
+            onClick={() => setMoisFiltre(null)}
+            className={`px-2.5 py-1 rounded-full text-xs font-mono border transition-colors ${
+              moisFiltre === null
+                ? 'bg-emeraude text-fond border-emeraude'
+                : 'text-texte-muted border-ligne hover:border-emeraude hover:text-emeraude'
+            }`}
+          >
+            Tous
+          </button>
+          {MOIS_COURTS.map((libelle, index) => {
+            const numero = index + 1
+            const actif = moisFiltre === numero
+            return (
+              <button
+                key={numero}
+                onClick={() => setMoisFiltre(actif ? null : numero)}
+                className={`px-2.5 py-1 rounded-full text-xs font-mono border transition-colors ${
+                  actif
+                    ? 'bg-emeraude text-fond border-emeraude'
+                    : 'text-texte-muted border-ligne hover:border-emeraude hover:text-emeraude'
+                }`}
+              >
+                {libelle}
+              </button>
+            )
+          })}
+          <button
+            onClick={() => setMoisFiltre(new Date().getMonth() + 1)}
+            className="font-mono text-xs text-texte-muted hover:text-or transition-colors ml-1"
+          >
+            Ce mois-ci
+          </button>
+        </div>
+        {moisFiltre !== null && (
+          <label className="flex items-center gap-2 mt-3 font-sans text-sm text-texte-muted">
+            <input
+              type="checkbox"
+              checked={inclureToutesAnnee}
+              onChange={(e) => setInclureToutesAnnee(e.target.checked)}
+              className="accent-or"
+            />
+            Inclure les ingrédients disponibles toute l'année (ou sans saison renseignée)
+          </label>
+        )}
+      </div>
+
+      <div className="mb-6">
+        <p className={CLASSE_LABEL}>Ingrédients affichés dans le réseau</p>
+        <div className="flex flex-wrap gap-2 items-center">
+          {LIMITES_AFFICHAGE.map((valeur) => {
+            const actif = limite === valeur
+            return (
+              <button
+                key={valeur === null ? 'tous' : valeur}
+                onClick={() => setLimite(valeur)}
+                className={`px-2.5 py-1 rounded-full text-xs font-mono border transition-colors ${
+                  actif
+                    ? 'bg-or text-fond border-or'
+                    : 'text-texte-muted border-ligne hover:border-or hover:text-or'
+                }`}
+              >
+                {valeur === null ? 'Tous' : valeur}
+              </button>
+            )
+          })}
+          <span className="font-sans text-xs text-texte-muted ml-1">
+            les plus utilisés (ou les plus compatibles avec la sélection)
+          </span>
+        </div>
+      </div>
+
       {modeGestion && (
-        <p className="font-sans text-sm text-texte-muted mb-4">
-          Mode gestion actif — cliquez des ingrédients dans le réseau pour les sélectionner, puis supprimez-les ou fusionnez-en deux.
-        </p>
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <p className="font-sans text-sm text-texte-muted">
+            Mode gestion actif — cliquez des ingrédients pour les sélectionner, puis supprimez-les, fusionnez-en deux ou définissez leur saison.
+          </p>
+          <button
+            onClick={selectionnerAffiches}
+            className="font-mono text-xs text-texte-muted hover:text-corail transition-colors"
+          >
+            Sélectionner les {ingredientsAffiches.length} affichés
+          </button>
+        </div>
       )}
 
       <div className="w-full max-w-3xl mx-auto">
         {ingredientsAffiches.length === 0 ? (
           <p className="text-texte-muted mt-4">
-            Aucun ingrédient pour ces tags.
+            Aucun ingrédient pour ces filtres.
           </p>
         ) : (
           <svg viewBox="0 0 800 760" className="w-full h-auto">
@@ -677,6 +1049,17 @@ export default function IngredientsSelector({
                       ✎ modifier
                     </text>
                   )}
+                  {estSurvole && (
+                    <text
+                      x={versDroite ? rayonPoint + 6 : -(rayonPoint + 6)}
+                      y={modeGestion ? 14 : 26}
+                      textAnchor={versDroite ? 'start' : 'end'}
+                      className="font-mono fill-texte-muted"
+                      style={{ fontSize: 9 }}
+                    >
+                      {libelleMois(ingredient.mois_disponibles)}
+                    </text>
+                  )}
                 </g>
               )
             })}
@@ -699,9 +1082,9 @@ export default function IngredientsSelector({
       </div>
 
       {!modeGestion && (
-        <div className="mt-8 p-4 bg-surface border border-ligne rounded-[--radius-carte] shadow-[--shadow-carte]">
+        <div className="mt-8 p-4 bg-surface border border-ligne rounded-lg">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="font-display italic text-xl text-texte">
+            <h2 className="font-serif italic text-xl text-texte">
               Ingrédients sélectionnés
             </h2>
             {selected.length > 0 && (
@@ -716,7 +1099,7 @@ export default function IngredientsSelector({
 
           {selected.length === 0 ? (
             <p className="font-sans text-sm text-texte-muted">
-              Cliquez un ingrédient dans le réseau pour révéler les recettes compatibles.
+              Cliquez un ingrédient dans le réseau (ou cherchez-le) pour révéler les recettes compatibles.
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
@@ -724,7 +1107,7 @@ export default function IngredientsSelector({
                 <button
                   key={nom}
                   onClick={() => toggleIngredient(nom)}
-                  className="bg-or text-fond px-3 py-1.5 rounded-[--radius-badge] text-xs font-medium hover:opacity-80 transition-opacity"
+                  className="bg-or text-fond px-3 py-1 rounded-full text-sm font-sans hover:opacity-80 transition-opacity"
                 >
                   {nom} ×
                 </button>
@@ -736,7 +1119,7 @@ export default function IngredientsSelector({
 
       {!modeGestion && (
         <div className="mt-6">
-          <h2 className="font-display italic text-xl text-texte mb-3">
+          <h2 className="font-serif italic text-xl text-texte mb-3">
             Recettes compatibles
           </h2>
 
@@ -745,7 +1128,7 @@ export default function IngredientsSelector({
               Aucune recette compatible pour l'instant.
             </p>
           ) : (
-            <div className="bg-surface border border-ligne rounded-[--radius-carte] shadow-[--shadow-carte] divide-y divide-ligne overflow-hidden">
+            <div className="bg-surface border border-ligne rounded-lg divide-y divide-ligne">
               {recettesCompatibles.map((recette) => (
                 <button
                   key={recette.id}
@@ -760,12 +1143,12 @@ export default function IngredientsSelector({
           )}
 
           {recetteSelectionnee && (
-            <div className="mt-4 p-4 bg-surface-2 border border-or rounded-[--radius-carte] flex items-center justify-between">
+            <div className="mt-4 p-4 bg-surface-2 border border-or rounded-lg flex items-center justify-between">
               <div>
                 <p className="font-mono text-xs text-texte-muted uppercase tracking-wide">
                   Recette sélectionnée
                 </p>
-                <p className="font-display italic text-lg text-texte">
+                <p className="font-serif italic text-lg text-texte">
                   {recetteSelectionnee.nom}
                 </p>
               </div>
@@ -781,14 +1164,18 @@ export default function IngredientsSelector({
       )}
 
       {modeGestion && selectionGestion.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-surface border-t border-ligne px-6 py-4 flex items-center justify-between z-40">
+        <div className="fixed bottom-0 left-0 right-0 bg-surface border-t border-ligne px-6 py-4 flex flex-wrap items-center justify-between gap-3 z-40">
           <p className="font-mono text-sm text-texte">
-            {selectionGestion.length} ingrédient(s) sélectionné(s) :{' '}
+            {selectionGestion.length} sélectionné(s) :{' '}
             <span className="text-texte-muted">
-              {ingredientsSelectionGestion.map((i) => i.nom).join(', ')}
+              {ingredientsSelectionGestion
+                .slice(0, 4)
+                .map((i) => i.nom)
+                .join(', ')}
+              {ingredientsSelectionGestion.length > 4 ? '…' : ''}
             </span>
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setSelectionGestion([])}
               className="font-mono text-xs text-texte-muted hover:text-texte transition-colors"
@@ -796,15 +1183,21 @@ export default function IngredientsSelector({
               Annuler la sélection
             </button>
             <button
+              onClick={ouvrirModaleSaison}
+              className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full border border-or text-or hover:bg-or hover:text-fond transition-colors"
+            >
+              Saison
+            </button>
+            <button
               onClick={ouvrirModaleFusion}
               disabled={selectionGestion.length !== 2}
-              className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-[--radius-champ] border border-emeraude text-emeraude hover:bg-emeraude hover:text-fond transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-emeraude"
+              className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full border border-emeraude text-emeraude hover:bg-emeraude hover:text-fond transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-emeraude"
             >
               Fusionner
             </button>
             <button
               onClick={ouvrirModaleSuppression}
-              className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-[--radius-champ] bg-corail text-fond hover:opacity-85 transition-opacity"
+              className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full bg-corail text-fond hover:opacity-85 transition-opacity"
             >
               Supprimer
             </button>
@@ -814,16 +1207,16 @@ export default function IngredientsSelector({
 
       {modale === 'suppression' && (
         <div className="fixed inset-0 bg-fond/80 flex items-center justify-center z-50 px-4">
-          <div className="bg-surface border border-ligne rounded-[--radius-carte] shadow-[--shadow-flottant] max-w-lg w-full p-6">
-            <h3 className="font-display italic text-2xl text-texte mb-3">
+          <div className="bg-surface border border-ligne rounded-lg max-w-lg w-full p-6">
+            <h3 className="font-serif italic text-2xl text-texte mb-3">
               Supprimer {selectionGestion.length} ingrédient(s) ?
             </h3>
 
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4 max-h-32 overflow-auto">
               {ingredientsSelectionGestion.map((i) => (
                 <span
                   key={i.ingredient_id}
-                  className="font-sans text-xs font-medium px-3 py-1.5 rounded-[--radius-badge] bg-surface-2 text-texte"
+                  className="font-sans text-sm px-3 py-1 rounded-full bg-surface-2 text-texte"
                 >
                   {i.nom}
                 </span>
@@ -835,7 +1228,7 @@ export default function IngredientsSelector({
                 <p className="font-sans text-sm text-corail mb-2">
                   {recettesImpacteesParSuppression.length} recette(s) utilisent ces ingrédients et perdront ce lien :
                 </p>
-                <div className="max-h-40 overflow-auto bg-surface-2 border border-ligne rounded-[--radius-champ] p-3">
+                <div className="max-h-40 overflow-auto bg-surface-2 border border-ligne rounded p-3">
                   {recettesImpacteesParSuppression.map((r) => (
                     <p key={r.recette_id} className="font-sans text-sm text-texte-muted">
                       {r.nom}
@@ -857,14 +1250,14 @@ export default function IngredientsSelector({
               <button
                 onClick={fermerModale}
                 disabled={enCoursGestion}
-                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-[--radius-champ] border border-ligne text-texte-muted hover:text-texte transition-colors disabled:opacity-50"
+                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full border border-ligne text-texte-muted hover:text-texte transition-colors disabled:opacity-50"
               >
                 Annuler
               </button>
               <button
                 onClick={confirmerSuppression}
                 disabled={enCoursGestion}
-                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-[--radius-champ] bg-corail text-fond hover:opacity-85 transition-opacity disabled:opacity-50"
+                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full bg-corail text-fond hover:opacity-85 transition-opacity disabled:opacity-50"
               >
                 {enCoursGestion ? 'Suppression...' : 'Confirmer la suppression'}
               </button>
@@ -873,14 +1266,90 @@ export default function IngredientsSelector({
         </div>
       )}
 
+      {modale === 'saison' && (
+        <div className="fixed inset-0 bg-fond/80 flex items-center justify-center z-50 px-4">
+          <div className="bg-surface border border-ligne rounded-lg max-w-lg w-full p-6">
+            <h3 className="font-serif italic text-2xl text-texte mb-2">
+              Définir la saison de {selectionGestion.length} ingrédient(s)
+            </h3>
+            <p className="font-sans text-sm text-texte-muted mb-4">
+              Cochez les mois de disponibilité. Aucun mois sélectionné = disponible toute l'année.
+            </p>
+
+            <div className="flex flex-wrap gap-2 mb-3">
+              {PRESETS_SAISONS.map((preset) => (
+                <button
+                  key={preset.libelle}
+                  onClick={() => setMoisEdition(preset.mois)}
+                  className="px-3 py-1 rounded-full text-xs font-mono border border-ligne text-texte-muted hover:border-or hover:text-or transition-colors"
+                >
+                  {preset.libelle}
+                </button>
+              ))}
+              <button
+                onClick={() => setMoisEdition([])}
+                className="px-3 py-1 rounded-full text-xs font-mono border border-ligne text-texte-muted hover:border-or hover:text-or transition-colors"
+              >
+                Toute l'année
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mb-4">
+              {MOIS_COURTS.map((libelle, index) => {
+                const numero = index + 1
+                const actif = moisEdition.includes(numero)
+                return (
+                  <button
+                    key={numero}
+                    onClick={() => toggleMoisEdition(numero)}
+                    className={`px-2.5 py-1 rounded-full text-xs font-mono border transition-colors ${
+                      actif
+                        ? 'bg-emeraude text-fond border-emeraude'
+                        : 'text-texte-muted border-ligne hover:border-emeraude hover:text-emeraude'
+                    }`}
+                  >
+                    {libelle}
+                  </button>
+                )
+              })}
+            </div>
+
+            <p className="font-mono text-xs text-texte-muted mb-4">
+              Résultat : {libelleMois(moisEdition)}
+            </p>
+
+            {erreurGestion && (
+              <p className="font-sans text-sm text-corail mb-3">{erreurGestion}</p>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={fermerModale}
+                disabled={enCoursGestion}
+                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full border border-ligne text-texte-muted hover:text-texte transition-colors disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={appliquerSaison}
+                disabled={enCoursGestion}
+                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full bg-or text-fond hover:opacity-85 transition-opacity disabled:opacity-50"
+              >
+                {enCoursGestion ? 'Enregistrement...' : 'Appliquer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {modale === 'fusion' && selectionGestion.length === 2 && (
         <div className="fixed inset-0 bg-fond/80 flex items-center justify-center z-50 px-4">
-          <div className="bg-surface border border-ligne rounded-[--radius-carte] shadow-[--shadow-flottant] max-w-lg w-full p-6">
-            <h3 className="font-display italic text-2xl text-texte mb-2">
+          <div className="bg-surface border border-ligne rounded-lg max-w-lg w-full p-6">
+            <h3 className="font-serif italic text-2xl text-texte mb-2">
               Fusionner deux ingrédients
             </h3>
             <p className="font-sans text-sm text-texte-muted mb-4">
-              Choisissez l'ingrédient à conserver. L'autre sera supprimé et ses tags/recettes transférés vers celui-ci.
+              Choisissez l'ingrédient à conserver. L'autre sera supprimé et ses tags, recettes et mois de disponibilité transférés vers celui-ci.
             </p>
 
             <div className="flex flex-col gap-3 mb-4">
@@ -889,7 +1358,7 @@ export default function IngredientsSelector({
                 return (
                   <label
                     key={id}
-                    className={`flex flex-col gap-1 p-3 rounded-[--radius-champ] border cursor-pointer transition-colors ${
+                    className={`flex flex-col gap-1 p-3 rounded border cursor-pointer transition-colors ${
                       ingredientCible === id
                         ? 'border-or bg-surface-2'
                         : 'border-ligne hover:border-texte-muted'
@@ -916,6 +1385,9 @@ export default function IngredientsSelector({
                         ? `Recettes : ${info.nomsRecettes.join(', ')}`
                         : 'Aucune recette'}
                     </span>
+                    <span className="font-mono text-xs text-texte-muted pl-6">
+                      Saison : {info.saison}
+                    </span>
                   </label>
                 )
               })}
@@ -929,14 +1401,14 @@ export default function IngredientsSelector({
               <button
                 onClick={fermerModale}
                 disabled={enCoursGestion}
-                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-[--radius-champ] border border-ligne text-texte-muted hover:text-texte transition-colors disabled:opacity-50"
+                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full border border-ligne text-texte-muted hover:text-texte transition-colors disabled:opacity-50"
               >
                 Annuler
               </button>
               <button
                 onClick={confirmerFusion}
                 disabled={enCoursGestion || !ingredientCible}
-                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-[--radius-champ] bg-emeraude text-fond hover:opacity-85 transition-opacity disabled:opacity-50"
+                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full bg-emeraude text-fond hover:opacity-85 transition-opacity disabled:opacity-50"
               >
                 {enCoursGestion ? 'Fusion...' : 'Confirmer la fusion'}
               </button>
