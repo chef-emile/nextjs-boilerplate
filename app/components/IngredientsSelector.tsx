@@ -11,6 +11,7 @@ type Ingredient = {
   ingredient_id: number
   nom: string
   mois_disponibles?: number[] | null
+  type_conservation?: string | null
 }
 
 type Recette = {
@@ -37,7 +38,7 @@ type IngredientTag = {
 
 type Position = { x: number; y: number }
 
-type Modale = 'suppression' | 'fusion' | 'saison' | null
+type Modale = 'suppression' | 'fusion' | 'saison' | 'conservation' | null
 
 const CENTRE: Position = { x: 400, y: 380 }
 const RAYON_BASE = 250
@@ -56,6 +57,25 @@ const PRESETS_SAISONS: { libelle: string; mois: number[] }[] = [
   { libelle: 'Automne', mois: [9, 10, 11] },
   { libelle: 'Hiver', mois: [12, 1, 2] },
 ]
+
+// Seule la valeur « frais » (légumes frais, viande) est considérée comme périssable.
+const VALEUR_PERISSABLE = 'frais'
+
+const OPTIONS_CONSERVATION: { valeur: string | null; libelle: string }[] = [
+  { valeur: 'frais', libelle: 'Frais — périssable (légumes frais, viande…)' },
+  { valeur: 'surgelé', libelle: 'Surgelé' },
+  { valeur: 'conserve', libelle: 'Conserve' },
+  { valeur: 'sec', libelle: 'Sec / épicerie (pâtes, riz, farine…)' },
+  { valeur: 'épice', libelle: 'Épice / condiment' },
+  { valeur: null, libelle: 'Non renseigné' },
+]
+
+function estImperissable(ingredient: Ingredient) {
+  return (
+    Boolean(ingredient.type_conservation) &&
+    ingredient.type_conservation !== VALEUR_PERISSABLE
+  )
+}
 
 const CLASSE_LABEL = 'font-mono text-xs uppercase tracking-wide text-texte-muted mb-2'
 
@@ -117,6 +137,7 @@ export default function IngredientsSelector({
   const [tagsFiltre, setTagsFiltre] = useState<number[]>([])
   const [moisFiltre, setMoisFiltre] = useState<number | null>(null)
   const [inclureToutesAnnee, setInclureToutesAnnee] = useState(true)
+  const [afficherImperissables, setAfficherImperissables] = useState(false)
   const [limite, setLimite] = useState<number | null>(LIMITE_PAR_DEFAUT)
   const [recherche, setRecherche] = useState('')
   const [positions, setPositions] = useState<Record<number, Position>>({})
@@ -127,6 +148,7 @@ export default function IngredientsSelector({
   const [modale, setModale] = useState<Modale>(null)
   const [ingredientCible, setIngredientCible] = useState<number | null>(null)
   const [moisEdition, setMoisEdition] = useState<number[]>([])
+  const [conservationEdition, setConservationEdition] = useState<string | null | undefined>(undefined)
   const [enCoursGestion, setEnCoursGestion] = useState(false)
   const [erreurGestion, setErreurGestion] = useState('')
 
@@ -248,8 +270,32 @@ export default function IngredientsSelector({
 
   // --- Filtres (tags + saison), puis limite aux N plus pertinents ---
 
+  // Le tri périssable / impérissable ne s'active que s'il y a un vrai classement
+  // (évite de tout masquer si la colonne vaut false partout par défaut).
+  const classificationActive = useMemo(() => {
+    const aDesPerissables = ingredients.some(
+      (i) => i.type_conservation === VALEUR_PERISSABLE
+    )
+    const aDesImperissables = ingredients.some((i) => estImperissable(i))
+    const aDesNonRenseignes = ingredients.some((i) => !i.type_conservation)
+    return aDesPerissables || (aDesImperissables && aDesNonRenseignes)
+  }, [ingredients])
+
+  const nbImperissables = useMemo(
+    () => ingredients.filter((i) => estImperissable(i)).length,
+    [ingredients]
+  )
+
   const ingredientsFiltres = useMemo((): Ingredient[] => {
     return ingredients.filter((ingredient) => {
+      if (
+        classificationActive &&
+        !afficherImperissables &&
+        estImperissable(ingredient)
+      ) {
+        return false
+      }
+
       if (tagsFiltre.length > 0) {
         const tagsDeLIngredient = tagsParIngredient.get(ingredient.ingredient_id)
         const tousPresents = tagsFiltre.every((tagId) =>
@@ -267,7 +313,7 @@ export default function IngredientsSelector({
 
       return true
     })
-  }, [ingredients, tagsFiltre, tagsParIngredient, moisFiltre, inclureToutesAnnee])
+  }, [ingredients, tagsFiltre, tagsParIngredient, moisFiltre, inclureToutesAnnee, classificationActive, afficherImperissables])
 
   const ingredientsAffiches = useMemo((): Ingredient[] => {
     const classes = [...ingredientsFiltres].sort((a, b) => {
@@ -526,6 +572,17 @@ export default function IngredientsSelector({
     setModale('saison')
   }
 
+  const ouvrirModaleConservation = () => {
+    if (selectionGestion.length === 0) return
+
+    const valeurs = ingredientsSelectionGestion.map((i) => i.type_conservation || null)
+    const tousIdentiques = valeurs.every((v) => v === valeurs[0])
+
+    setConservationEdition(tousIdentiques ? valeurs[0] : undefined)
+    setErreurGestion('')
+    setModale('conservation')
+  }
+
   const fermerModale = () => {
     if (enCoursGestion) return
     setModale(null)
@@ -621,6 +678,37 @@ export default function IngredientsSelector({
       router.refresh()
     } catch (err: any) {
       setErreurGestion(err.message || 'Erreur pendant la mise à jour des saisons.')
+    }
+
+    setEnCoursGestion(false)
+  }
+
+  const appliquerConservation = async () => {
+    if (conservationEdition === undefined) return
+
+    setErreurGestion('')
+    setEnCoursGestion(true)
+
+    try {
+      const { data: lignesModifiees, error } = await supabase
+        .from('ingredients')
+        .update({ type_conservation: conservationEdition })
+        .in('ingredient_id', selectionGestion)
+        .select('ingredient_id')
+
+      if (error) throw error
+
+      if (!lignesModifiees || lignesModifiees.length !== selectionGestion.length) {
+        throw new Error(
+          'Mise à jour incomplète : policy UPDATE manquante sur « ingredients » ?'
+        )
+      }
+
+      setSelectionGestion([])
+      setModale(null)
+      router.refresh()
+    } catch (err: any) {
+      setErreurGestion(err.message || 'Erreur pendant la mise à jour de la conservation.')
     }
 
     setEnCoursGestion(false)
@@ -904,6 +992,22 @@ export default function IngredientsSelector({
             les plus utilisés (ou les plus compatibles avec la sélection)
           </span>
         </div>
+
+        {classificationActive ? (
+          <label className="flex items-center gap-2 mt-3 font-sans text-sm text-texte-muted">
+            <input
+              type="checkbox"
+              checked={afficherImperissables}
+              onChange={(e) => setAfficherImperissables(e.target.checked)}
+              className="accent-or"
+            />
+            Afficher aussi les non périssables (surgelés, conserves, secs, épices…) — {nbImperissables} masqué(s) par défaut
+          </label>
+        ) : (
+          <p className="font-sans text-xs text-texte-muted mt-3">
+            Aucun ingrédient n'a encore de type de conservation : le tri périssable / non périssable est inactif. Classez-les via Mode gestion → Conservation.
+          </p>
+        )}
       </div>
 
       {modeGestion && (
@@ -1058,6 +1162,9 @@ export default function IngredientsSelector({
                       style={{ fontSize: 9 }}
                     >
                       {libelleMois(ingredient.mois_disponibles)}
+                      {ingredient.type_conservation
+                        ? ` · ${ingredient.type_conservation}`
+                        : ''}
                     </text>
                   )}
                 </g>
@@ -1187,6 +1294,12 @@ export default function IngredientsSelector({
               className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full border border-or text-or hover:bg-or hover:text-fond transition-colors"
             >
               Saison
+            </button>
+            <button
+              onClick={ouvrirModaleConservation}
+              className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full border border-texte-muted text-texte-muted hover:bg-texte-muted hover:text-fond transition-colors"
+            >
+              Conservation
             </button>
             <button
               onClick={ouvrirModaleFusion}
@@ -1342,6 +1455,63 @@ export default function IngredientsSelector({
         </div>
       )}
 
+      {modale === 'conservation' && (
+        <div className="fixed inset-0 bg-fond/80 flex items-center justify-center z-50 px-4">
+          <div className="bg-surface border border-ligne rounded-lg max-w-md w-full p-6">
+            <h3 className="font-serif italic text-2xl text-texte mb-2">
+              Conservation de {selectionGestion.length} ingrédient(s)
+            </h3>
+            <p className="font-sans text-sm text-texte-muted mb-4">
+              Seuls les ingrédients « frais » (légumes frais, viande…) restent affichés par défaut dans le réseau ; surgelés, conserves, secs et épices sont masqués.
+            </p>
+
+            <div className="flex flex-col gap-2 mb-4">
+              {OPTIONS_CONSERVATION.map((option) => (
+                <label
+                  key={String(option.valeur)}
+                  className={`flex items-center gap-2 p-3 rounded border cursor-pointer transition-colors ${
+                    conservationEdition === option.valeur
+                      ? 'border-or bg-surface-2'
+                      : 'border-ligne hover:border-texte-muted'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="conservation"
+                    checked={conservationEdition === option.valeur}
+                    onChange={() => setConservationEdition(option.valeur)}
+                  />
+                  <span className="font-sans text-sm text-texte">
+                    {option.libelle}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            {erreurGestion && (
+              <p className="font-sans text-sm text-corail mb-3">{erreurGestion}</p>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={fermerModale}
+                disabled={enCoursGestion}
+                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full border border-ligne text-texte-muted hover:text-texte transition-colors disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={appliquerConservation}
+                disabled={enCoursGestion || conservationEdition === undefined}
+                className="font-mono text-xs uppercase tracking-wide px-4 py-2 rounded-full bg-or text-fond hover:opacity-85 transition-opacity disabled:opacity-50"
+              >
+                {enCoursGestion ? 'Enregistrement...' : 'Appliquer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {modale === 'fusion' && selectionGestion.length === 2 && (
         <div className="fixed inset-0 bg-fond/80 flex items-center justify-center z-50 px-4">
           <div className="bg-surface border border-ligne rounded-lg max-w-lg w-full p-6">
@@ -1419,3 +1589,4 @@ export default function IngredientsSelector({
     </div>
   )
 }
+
