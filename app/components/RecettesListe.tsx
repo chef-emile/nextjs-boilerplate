@@ -233,7 +233,7 @@ export default function RecettesListe({
                 <button
                   key={tag.tag_id}
                   onClick={() => toggleTag(tag.tag_id)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-[--radius-badge] text-xs font-medium transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-(--radius-badge) text-xs font-medium transition-colors"
                   style={{
                     backgroundColor: actif ? couleur : 'transparent',
                     color: actif ? '#17140F' : '#9C9284',
@@ -287,7 +287,7 @@ export default function RecettesListe({
                     toggleSelection(recette.recette_id)
                   }
                 }}
-                className={`relative block rounded-[--radius-carte] shadow-[--shadow-carte] overflow-hidden bg-surface hover:bg-surface-2 border transition-colors ${
+                className={`relative block rounded-(--radius-carte) shadow-(--shadow-carte) overflow-hidden bg-surface hover:bg-surface-2 border transition-colors ${
                   estSelectionnee ? 'border-or' : 'border-ligne'
                 }`}
               >
@@ -324,7 +324,7 @@ export default function RecettesListe({
                         return (
                           <span
                             key={tag.tag_id}
-                            className="text-xs font-medium px-2 py-0.5 rounded-[--radius-badge]"
+                            className="text-xs font-medium px-2 py-0.5 rounded-(--radius-badge)"
                             style={{
                               backgroundColor: couleur,
                               color: '#17140F',
