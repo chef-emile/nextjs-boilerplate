@@ -273,7 +273,7 @@ export default function RecettesListe({
       {recettesFiltrees.length === 0 ? (
         <p className="text-texte-muted">Aucune recette pour ces filtres.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {recettesFiltrees.map((recette) => {
             const tagsRecetteCarte = tagsDe(recette.recette_id)
             const estSelectionnee = ensembleSelection.has(recette.recette_id)
@@ -293,7 +293,7 @@ export default function RecettesListe({
               >
                 {modeSelection && (
                   <span
-                    className={`absolute top-2 right-2 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold ${
+                    className={`absolute top-1.5 right-1.5 z-10 w-5 h-5 rounded-full border-2 flex items-center justify-center text-xs font-bold ${
                       estSelectionnee
                         ? 'bg-or text-fond border-or'
                         : 'bg-fond/70 text-transparent border-texte-muted'
@@ -302,7 +302,7 @@ export default function RecettesListe({
                     ✓
                   </span>
                 )}
-                <div className="h-36 bg-surface-2 flex items-center justify-center overflow-hidden">
+                <div className="h-24 bg-surface-2 flex items-center justify-center overflow-hidden">
                   {recette.photo_url ? (
                     <img
                       src={recette.photo_url}
@@ -310,21 +310,21 @@ export default function RecettesListe({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <i className="text-texte-muted text-2xl">🍽</i>
+                    <i className="text-texte-muted text-xl">🍽</i>
                   )}
                 </div>
-                <div className="p-4">
-                  <p className="font-display italic text-2xl text-texte mb-2">
+                <div className="p-3">
+                  <p className="font-display italic text-base leading-snug text-texte mb-1.5 line-clamp-2">
                     {recette.nom}
                   </p>
                   {tagsRecetteCarte.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {tagsRecetteCarte.map((tag) => {
+                    <div className="flex flex-wrap gap-1">
+                      {tagsRecetteCarte.slice(0, 3).map((tag) => {
                         const couleur = couleurTag(tag.nom)
                         return (
                           <span
                             key={tag.tag_id}
-                            className="text-xs font-medium px-2 py-0.5 rounded-(--radius-badge)"
+                            className="text-[11px] font-medium px-1.5 py-0.5 rounded-(--radius-badge)"
                             style={{
                               backgroundColor: couleur,
                               color: '#17140F',
@@ -334,6 +334,11 @@ export default function RecettesListe({
                           </span>
                         )
                       })}
+                      {tagsRecetteCarte.length > 3 && (
+                        <span className="text-[11px] font-mono text-texte-muted px-1 py-0.5">
+                          +{tagsRecetteCarte.length - 3}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
