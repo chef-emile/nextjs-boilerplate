@@ -15,6 +15,12 @@ export default async function IngredientsPage() {
     .eq("portee", "ingredient")
     .order("nom");
   const ingredientTags = await lireToutesLesLignes<any>("ingredient_tags", "ingredient_id, tag_id", ["ingredient_id", "tag_id"]);
+  const { data: tagsRecettes } = await supabase
+    .from("tags")
+    .select("*")
+    .eq("portee", "recette")
+    .order("nom");
+  const recetteTags = await lireToutesLesLignes<any>("recette_tags", "recette_id, tag_id", ["recette_id", "tag_id"]);
   return (
     <main className="min-h-screen bg-fond text-texte px-6 py-10 md:px-10">
       <div className="mb-8">
@@ -31,6 +37,8 @@ export default async function IngredientsPage() {
         recetteIngredients={recetteIngredients}
         tags={tags || []}
         ingredientTags={ingredientTags}
+        tagsRecettes={tagsRecettes || []}
+        recetteTags={recetteTags}
       />
     </main>
   );
