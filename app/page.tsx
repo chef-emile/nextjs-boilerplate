@@ -1,13 +1,11 @@
 import { supabase } from "../lib/supabase";
+import { lireToutesLesLignes } from "@/lib/supabaseLecture";
 import Link from "next/link";
 import RecettesListe from "./components/RecettesListe";
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
-  const { data: recettes } = await supabase
-    .from("recettes")
-    .select("*")
-    .order("nom");
+  const recettes = await lireToutesLesLignes<any>("recettes", "*", ["nom", "recette_id"]);
 
   const { data: tags } = await supabase
     .from("tags")
@@ -15,9 +13,7 @@ export default async function Home() {
     .eq("portee", "recette")
     .order("nom");
 
-  const { data: recetteTags } = await supabase
-    .from("recette_tags")
-    .select("*");
+  const recetteTags = await lireToutesLesLignes<any>("recette_tags", "recette_id, tag_id", ["recette_id", "tag_id"]);
 
   return (
     <main className="min-h-screen bg-fond px-6 py-10 md:px-10">
@@ -57,9 +53,9 @@ export default async function Home() {
         </div>
 
         <RecettesListe
-          recettes={recettes || []}
+          recettes={recettes}
           tags={tags || []}
-          recetteTags={recetteTags || []}
+          recetteTags={recetteTags}
         />
       </div>
     </main>
