@@ -366,6 +366,35 @@ export default function IngredientsSelector({
     return ingredients.filter((i) => ids.has(i.ingredient_id))
   }, [ingredientsFiltres, ingredients, scoreParIngredient, usageParIngredient, limite, selectedIds, selectionGestion])
 
+  // Mode gestion : liste alphabétique de TOUS les ingrédients filtrés (pas de limite « réseau »),
+  // plus ceux déjà sélectionnés (ex. ajoutés par la recherche) même s'ils sont filtrés.
+  const groupesGestion = useMemo((): { lettre: string; items: Ingredient[] }[] => {
+    const cle = (nom: string) =>
+      nom.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+
+    const ids = new Set(ingredientsFiltres.map((i) => i.ingredient_id))
+    selectionGestion.forEach((id) => ids.add(id))
+
+    const tries = ingredients
+      .filter((i) => ids.has(i.ingredient_id))
+      .sort((a, b) => cle(a.nom).localeCompare(cle(b.nom), 'fr'))
+
+    const groupes: { lettre: string; items: Ingredient[] }[] = []
+    tries.forEach((ingredient) => {
+      const premiere = cle(ingredient.nom).charAt(0).toUpperCase()
+      const lettre = /[A-Z]/.test(premiere) ? premiere : '#'
+      const dernier = groupes[groupes.length - 1]
+      if (dernier && dernier.lettre === lettre) dernier.items.push(ingredient)
+      else groupes.push({ lettre, items: [ingredient] })
+    })
+    return groupes
+  }, [ingredients, ingredientsFiltres, selectionGestion])
+
+  const nbGestion = useMemo(
+    () => groupesGestion.reduce((total, g) => total + g.items.length, 0),
+    [groupesGestion]
+  )
+
   const resultatsRecherche = useMemo((): Ingredient[] => {
     const terme = normaliser(recherche.trim())
     if (terme.length === 0) return []
@@ -576,7 +605,7 @@ export default function IngredientsSelector({
   }, [selectionGestion, ingredientsParRecette, recettes])
 
   const selectionnerAffiches = () => {
-    setSelectionGestion(ingredientsAffiches.map((i) => i.ingredient_id))
+    setSelectionGestion(groupesGestion.flatMap((g) => g.items.map((i) => i.ingredient_id)))
   }
 
   const ouvrirModaleSuppression = () => {
@@ -875,7 +904,9 @@ export default function IngredientsSelector({
     <div className={modeGestion && selectionGestion.length > 0 ? 'pb-24' : ''}>
       <div className="flex items-center justify-between mb-4">
         <p className="font-mono text-xs text-texte-muted">
-          {ingredientsAffiches.length} affiché(s) sur {ingredientsFiltres.length}
+          {modeGestion
+            ? `${nbGestion} ingrédient(s) dans la liste`
+            : `${ingredientsAffiches.length} affiché(s) sur ${ingredientsFiltres.length}`}
         </p>
         <button
           onClick={basculerModeGestion}
@@ -1005,6 +1036,8 @@ export default function IngredientsSelector({
       </div>
 
       <div className="mb-6">
+        {!modeGestion && (
+        <>
         <p className={CLASSE_LABEL}>Ingrédients affichés dans le réseau</p>
         <div className="flex flex-wrap gap-2 items-center">
           {LIMITES_AFFICHAGE.map((valeur) => {
@@ -1027,9 +1060,11 @@ export default function IngredientsSelector({
             les plus utilisés (ou les plus compatibles avec la sélection)
           </span>
         </div>
+        </>
+        )}
 
         {classificationActive ? (
-          <label className="flex items-center gap-2 mt-3 font-sans text-sm text-texte-muted">
+          <label className={`flex items-center gap-2 font-sans text-sm text-texte-muted ${modeGestion ? '' : 'mt-3'}`}>
             <input
               type="checkbox"
               checked={afficherImperissables}
@@ -1039,7 +1074,7 @@ export default function IngredientsSelector({
             Afficher aussi les non périssables (surgelés, conserves, secs, épices…) — {nbImperissables} masqué(s) par défaut
           </label>
         ) : (
-          <p className="font-sans text-xs text-texte-muted mt-3">
+          <p className={`font-sans text-xs text-texte-muted ${modeGestion ? '' : 'mt-3'}`}>
             Aucun ingrédient n'a encore de type de conservation : le tri périssable / non périssable est inactif. Classez-les via Mode gestion → Conservation.
           </p>
         )}
@@ -1048,19 +1083,84 @@ export default function IngredientsSelector({
       {modeGestion && (
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <p className="font-sans text-sm text-texte-muted">
-            Mode gestion actif — cliquez des ingrédients pour les sélectionner, puis supprimez-les, fusionnez-en deux ou définissez leur saison.
+            Mode gestion actif — cochez des ingrédients, puis supprimez-les, fusionnez-en deux ou définissez leur saison / conservation.
           </p>
           <button
             onClick={selectionnerAffiches}
             className="font-mono text-xs text-texte-muted hover:text-corail transition-colors"
           >
-            Sélectionner les {ingredientsAffiches.length} affichés
+            Tout sélectionner ({nbGestion})
           </button>
         </div>
       )}
 
-      <div className="w-full max-w-3xl mx-auto">
-        {ingredientsAffiches.length === 0 ? (
+      <div className={modeGestion ? 'w-full' : 'w-full max-w-3xl mx-auto'}>
+        {modeGestion ? (
+          groupesGestion.length === 0 ? (
+            <p className="text-texte-muted mt-4">Aucun ingrédient pour ces filtres.</p>
+          ) : (
+            <div className="sm:columns-2 xl:columns-3 gap-8">
+              {groupesGestion.map((groupe) => (
+                <section key={groupe.lettre} className="mb-5">
+                  <h3 className="font-display italic text-2xl text-or border-b border-ligne pb-1 mb-1 break-after-avoid">
+                    {groupe.lettre}
+                  </h3>
+                  <ul>
+                    {groupe.items.map((ingredient) => {
+                      const coche = selectionGestion.includes(ingredient.ingredient_id)
+                      const usage = usageParIngredient.get(ingredient.ingredient_id) || 0
+                      const saison = libelleMois(ingredient.mois_disponibles)
+                      const details = [
+                        `${usage} recette${usage > 1 ? 's' : ''}`,
+                        saison !== "Toute l'année" ? saison : null,
+                        ingredient.type_conservation || null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')
+
+                      return (
+                        <li
+                          key={ingredient.ingredient_id}
+                          className={`flex items-center gap-2 rounded px-2 py-1.5 break-inside-avoid transition-colors ${
+                            coche ? 'bg-surface-2' : 'hover:bg-surface-2'
+                          }`}
+                        >
+                          <label className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={coche}
+                              onChange={() => toggleSelectionGestion(ingredient.ingredient_id)}
+                              className="accent-corail shrink-0"
+                            />
+                            <span className="min-w-0">
+                              <span
+                                className={`block font-sans text-sm truncate ${
+                                  coche ? 'text-texte font-semibold' : 'text-texte'
+                                }`}
+                              >
+                                {ingredient.nom}
+                              </span>
+                              <span className="block font-mono text-[11px] text-texte-muted truncate">
+                                {details}
+                              </span>
+                            </span>
+                          </label>
+                          <Link
+                            href={`/ingredients/${ingredient.ingredient_id}`}
+                            className="font-mono text-xs text-texte-muted hover:text-or transition-colors shrink-0"
+                            title="Modifier"
+                          >
+                            ✎
+                          </Link>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )
+        ) : ingredientsAffiches.length === 0 ? (
           <p className="text-texte-muted mt-4">
             Aucun ingrédient pour ces filtres.
           </p>
@@ -1208,19 +1308,13 @@ export default function IngredientsSelector({
           </svg>
         )}
 
-        <p className="text-center font-sans text-xs text-texte-muted mt-2">
-          {modeGestion ? (
-            <>
-              <span className="text-corail">●</span> sélectionné pour gestion
-            </>
-          ) : (
-            <>
-              <span className="text-or">●</span> sélectionné&nbsp;&nbsp;
-              <span className="text-emeraude">●</span> compatible&nbsp;&nbsp;
-              <span className="text-texte-muted">●</span> neutre
-            </>
-          )}
-        </p>
+        {!modeGestion && (
+          <p className="text-center font-sans text-xs text-texte-muted mt-2">
+            <span className="text-or">●</span> sélectionné&nbsp;&nbsp;
+            <span className="text-emeraude">●</span> compatible&nbsp;&nbsp;
+            <span className="text-texte-muted">●</span> neutre
+          </p>
+        )}
       </div>
 
       {!modeGestion && (
