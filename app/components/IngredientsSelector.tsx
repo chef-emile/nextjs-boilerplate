@@ -36,6 +36,11 @@ type IngredientTag = {
   tag_id: number
 }
 
+type RecetteTag = {
+  recette_id: number
+  tag_id: number
+}
+
 type Position = { x: number; y: number }
 
 type Modale = 'suppression' | 'fusion' | 'saison' | 'conservation' | null
@@ -123,12 +128,16 @@ export default function IngredientsSelector({
   recetteIngredients,
   tags = [],
   ingredientTags = [],
+  tagsRecettes = [],
+  recetteTags = [],
 }: {
   ingredients: Ingredient[]
   recettes: Recette[]
   recetteIngredients: RecetteIngredient[]
   tags?: Tag[]
   ingredientTags?: IngredientTag[]
+  tagsRecettes?: Tag[]
+  recetteTags?: RecetteTag[]
 }) {
   const router = useRouter()
 
@@ -140,6 +149,7 @@ export default function IngredientsSelector({
   const [afficherImperissables, setAfficherImperissables] = useState(false)
   const [limite, setLimite] = useState<number | null>(LIMITE_PAR_DEFAUT)
   const [recherche, setRecherche] = useState('')
+  const [tagsRecetteFiltre, setTagsRecetteFiltre] = useState<number[]>([])
   const [positions, setPositions] = useState<Record<number, Position>>({})
   const [hoveredId, setHoveredId] = useState<number | null>(null)
 
@@ -240,6 +250,16 @@ export default function IngredientsSelector({
     return scoreParIngredient.get(ingredientId) || 0
   }
 
+  const tagsParRecette = useMemo(() => {
+    const map = new Map<number, Set<number>>()
+    recetteTags.forEach((rt) => {
+      const ensemble = map.get(rt.recette_id) || new Set<number>()
+      ensemble.add(rt.tag_id)
+      map.set(rt.recette_id, ensemble)
+    })
+    return map
+  }, [recetteTags])
+
   const recettesCompatibles = useMemo((): { id: number; nom: string; score: number }[] => {
     if (selected.length === 0) return []
 
@@ -264,9 +284,16 @@ export default function IngredientsSelector({
         }
       })
       .filter((r) => r.score > 0)
+      .filter((r) => {
+        if (tagsRecetteFiltre.length === 0) return true
+        const tagsDeLaRecette = tagsParRecette.get(r.id)
+        return tagsRecetteFiltre.every((tagId) =>
+          Boolean(tagsDeLaRecette && tagsDeLaRecette.has(tagId))
+        )
+      })
       .sort((a, b) => b.score - a.score)
       .slice(0, 10)
-  }, [selected, recettes, ingredientsParRecette, selectedIds])
+  }, [selected, recettes, ingredientsParRecette, selectedIds, tagsRecetteFiltre, tagsParRecette])
 
   // --- Filtres (tags + saison), puis limite aux N plus pertinents ---
 
@@ -490,6 +517,14 @@ export default function IngredientsSelector({
 
   const toggleTagFiltre = (tagId: number) => {
     setTagsFiltre((current) =>
+      current.includes(tagId)
+        ? current.filter((id) => id !== tagId)
+        : [...current, tagId]
+    )
+  }
+
+  const toggleTagRecetteFiltre = (tagId: number) => {
+    setTagsRecetteFiltre((current) =>
       current.includes(tagId)
         ? current.filter((id) => id !== tagId)
         : [...current, tagId]
@@ -1230,6 +1265,43 @@ export default function IngredientsSelector({
             Recettes compatibles
           </h2>
 
+          {tagsRecettes.length > 0 ? (
+            <div className="mb-3">
+              <div className="flex flex-wrap gap-2 items-center">
+                {tagsRecettes.map((tag) => {
+                  const actif = tagsRecetteFiltre.includes(tag.tag_id)
+                  const couleur = couleurTag(tag.nom)
+                  return (
+                    <button
+                      key={tag.tag_id}
+                      onClick={() => toggleTagRecetteFiltre(tag.tag_id)}
+                      className="px-3 py-1 rounded-full text-sm border transition-colors duration-200"
+                      style={{
+                        borderColor: couleur,
+                        backgroundColor: actif ? couleur : 'transparent',
+                        color: actif ? '#17140F' : couleur,
+                      }}
+                    >
+                      {tag.nom}
+                    </button>
+                  )
+                })}
+                {tagsRecetteFiltre.length > 0 && (
+                  <button
+                    onClick={() => setTagsRecetteFiltre([])}
+                    className="font-mono text-xs text-texte-muted hover:text-or transition-colors ml-1"
+                  >
+                    Réinitialiser
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="font-sans text-xs text-texte-muted mb-3">
+              Aucun tag de recette pour l'instant : ajoute-en depuis l'accueil (bouton Sélection) pour pouvoir filtrer ici.
+            </p>
+          )}
+
           {recettesCompatibles.length === 0 ? (
             <p className="font-sans text-sm text-texte-muted">
               Aucune recette compatible pour l'instant.
@@ -1589,4 +1661,3 @@ export default function IngredientsSelector({
     </div>
   )
 }
-
