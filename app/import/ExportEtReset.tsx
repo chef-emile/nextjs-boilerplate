@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { lireToutesLesLignes } from '@/lib/supabaseLecture'
 
 const PHRASE_CONFIRMATION = 'SUPPRIMER TOUT'
 
@@ -29,16 +30,17 @@ export default function ExportEtReset() {
     setErreurExport('')
 
     try {
-      const { data: recettesData, error: errRecettes } = await supabase
-        .from('recettes')
-        .select('recette_id, nom, lien_externe, instructions')
-        .order('nom')
-      if (errRecettes) throw errRecettes
+      const recettesData = await lireToutesLesLignes<any>(
+        'recettes',
+        'recette_id, nom, lien_externe, instructions',
+        ['nom', 'recette_id']
+      )
 
-      const { data: recetteTagsData, error: errRecetteTags } = await supabase
-        .from('recette_tags')
-        .select('recette_id, tag_id')
-      if (errRecetteTags) throw errRecetteTags
+      const recetteTagsData = await lireToutesLesLignes<any>(
+        'recette_tags',
+        'recette_id, tag_id',
+        ['recette_id', 'tag_id']
+      )
 
       const { data: tagsData, error: errTags } = await supabase
         .from('tags')
@@ -46,16 +48,17 @@ export default function ExportEtReset() {
         .eq('portee', 'recette')
       if (errTags) throw errTags
 
-      const { data: recetteIngredientsData, error: errRecetteIngredients } =
-        await supabase
-          .from('recette_ingredients')
-          .select('recette_id, ingredient_id, obligatoire')
-      if (errRecetteIngredients) throw errRecetteIngredients
+      const recetteIngredientsData = await lireToutesLesLignes<any>(
+        'recette_ingredients',
+        'recette_id, ingredient_id, obligatoire',
+        ['recette_id', 'ingredient_id']
+      )
 
-      const { data: ingredientsData, error: errIngredients } = await supabase
-        .from('ingredients')
-        .select('ingredient_id, nom')
-      if (errIngredients) throw errIngredients
+      const ingredientsData = await lireToutesLesLignes<any>(
+        'ingredients',
+        'ingredient_id, nom',
+        ['ingredient_id']
+      )
 
       const nomTag = (tagId: number) =>
         tagsData?.find((t) => t.tag_id === tagId)?.nom || ''
