@@ -7,7 +7,7 @@ export default async function IngredientsPage() {
   // ce qui faussait les liaisons recette / ingrédient dès que la base grossit.
   // Colonnes réduites : le réseau n'a besoin ni des instructions ni des liens des recettes.
   const ingredients = await lireToutesLesLignes<any>("ingredients", "*", ["nom", "ingredient_id"]);
-  const recettes = await lireToutesLesLignes<any>("recettes", "recette_id, nom", ["recette_id"]);
+  const recettes = await lireToutesLesLignes<any>("recettes", "recette_id, nom, photo_url", ["recette_id"]);
   const recetteIngredients = await lireToutesLesLignes<any>("recette_ingredients", "recette_id, ingredient_id, obligatoire", ["recette_id", "ingredient_id"]);
   const { data: tags } = await supabase
     .from("tags")
