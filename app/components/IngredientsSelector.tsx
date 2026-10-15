@@ -17,6 +17,7 @@ type Ingredient = {
 type Recette = {
   recette_id: number
   nom: string
+  photo_url?: string | null
 }
 
 type RecetteIngredient = {
@@ -298,7 +299,6 @@ export default function IngredientsSelector({
   const router = useRouter()
 
   const [selected, setSelected] = useState<string[]>([])
-  const [selectedRecipeId, setSelectedRecipeId] = useState<number | null>(null)
   const [tagsFiltre, setTagsFiltre] = useState<number[]>([])
   const [moisFiltre, setMoisFiltre] = useState<number | null>(null)
   const [inclureToutesAnnee, setInclureToutesAnnee] = useState(true)
@@ -410,7 +410,7 @@ export default function IngredientsSelector({
     return map
   }, [recetteTags])
 
-  const recettesCompatibles = useMemo((): { id: number; nom: string; score: number }[] => {
+  const recettesCompatibles = useMemo((): { id: number; nom: string; score: number; photo: string | null }[] => {
     if (selected.length === 0) return []
 
     return recettes
@@ -431,6 +431,7 @@ export default function IngredientsSelector({
           id: recette.recette_id,
           nom: recette.nom,
           score,
+          photo: recette.photo_url || null,
         }
       })
       .filter((r) => r.score > 0)
@@ -442,7 +443,7 @@ export default function IngredientsSelector({
         )
       })
       .sort((a, b) => b.score - a.score)
-      .slice(0, 10)
+      .slice(0, 12)
   }, [selected, recettes, ingredientsParRecette, selectedIds, tagsRecetteFiltre, tagsParRecette])
 
   // --- Filtres (tags + saison), puis limite aux N plus pertinents ---
@@ -630,10 +631,6 @@ export default function IngredientsSelector({
     return resultat
   }, [ingredientsAffiches, liensDeBase, hauteurNuage])
 
-  const recetteSelectionnee = recettesCompatibles.find(
-    (r) => r.id === selectedRecipeId
-  )
-
   // --- Handlers de sélection / filtres ---
 
   const toggleIngredient = (nom: string) => {
@@ -686,7 +683,6 @@ export default function IngredientsSelector({
   const basculerModeGestion = () => {
     setModeGestion((current) => !current)
     setSelected([])
-    setSelectedRecipeId(null)
     setSelectionGestion([])
     setModale(null)
     setIngredientCible(null)
@@ -1477,36 +1473,37 @@ export default function IngredientsSelector({
               Aucune recette compatible pour l'instant.
             </p>
           ) : (
-            <div className="bg-surface border border-ligne rounded-lg divide-y divide-ligne">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
               {recettesCompatibles.map((recette) => (
-                <button
+                <Link
                   key={recette.id}
-                  onClick={() => setSelectedRecipeId(recette.id)}
-                  className="w-full flex justify-between items-center px-4 py-2 hover:bg-surface-2 transition-colors"
+                  href={`/recettes/${recette.id}`}
+                  className="group relative block aspect-square overflow-hidden rounded-(--radius-carte) border border-ligne bg-surface-2 hover:border-or transition-colors"
                 >
-                  <span className="font-sans text-texte">{recette.nom}</span>
-                  <span className="font-mono text-sm text-or">{recette.score}%</span>
-                </button>
+                  {recette.photo ? (
+                    <img
+                      src={recette.photo}
+                      alt=""
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="font-display italic text-4xl text-ligne">
+                        {recette.nom.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-fond via-fond/80 to-transparent px-3 pt-8 pb-2">
+                    <p className="font-display italic text-sm leading-snug text-texte line-clamp-2">
+                      {recette.nom}
+                    </p>
+                  </div>
+                  <span className="absolute top-2 right-2 rounded-full bg-fond/85 border border-or px-2 py-0.5 font-mono text-xs text-or">
+                    {recette.score}%
+                  </span>
+                </Link>
               ))}
-            </div>
-          )}
-
-          {recetteSelectionnee && (
-            <div className="mt-4 p-4 bg-surface-2 border border-or rounded-lg flex items-center justify-between">
-              <div>
-                <p className="font-mono text-xs text-texte-muted uppercase tracking-wide">
-                  Recette sélectionnée
-                </p>
-                <p className="font-display italic text-lg text-texte">
-                  {recetteSelectionnee.nom}
-                </p>
-              </div>
-              <Link
-                href={`/recettes/${recetteSelectionnee.id}`}
-                className="font-mono text-sm text-or hover:underline"
-              >
-                Voir la fiche →
-              </Link>
             </div>
           )}
         </div>
