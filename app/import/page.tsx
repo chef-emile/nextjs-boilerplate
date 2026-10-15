@@ -4,6 +4,7 @@ import ImportIngredients from './ImportIngredients'
 import ImportRecettes from './ImportRecettes'
 import ExportEtReset from './ExportEtReset'
 import ExcelIngredients from './ExcelIngredients'
+import ExcelRecettes from './ExcelRecettes'
 
 export default function ImportPage() {
   return (
@@ -11,6 +12,7 @@ export default function ImportPage() {
       <h1 className="text-2xl font-bold mb-6">Import en masse</h1>
       <div className="flex flex-col gap-6 max-w-2xl">
         <ExcelIngredients />
+        <ExcelRecettes />
         <ImportIngredients />
         <ImportRecettes />
         <ExportEtReset />
