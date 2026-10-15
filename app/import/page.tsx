@@ -3,7 +3,7 @@
 import ImportIngredients from './ImportIngredients'
 import ImportRecettes from './ImportRecettes'
 import ExportEtReset from './ExportEtReset'
-import ExcelIngredients from '@/app/components/ExcelIngredients'
+import ExcelIngredients from './ExcelIngredients'
 
 export default function ImportPage() {
   return (
